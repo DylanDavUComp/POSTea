@@ -1,0 +1,36 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section">
+  <p class="eyebrow">Observatorio IMAGO</p><h1>Publicación</h1>
+  <%- include('partials/admin-nav',{current:'/admin/investigaciones'}) %>
+  <p>Asigna un territorio a cada ficha seleccionada para publicarla. Al publicar, su identificador queda fijo.</p>
+  <% if (message) { %><p class="success-note" role="status"><%= message %></p><% } %>
+  <% if (!research.length) { %><p>Aún no hay fichas para revisar.</p><% } %>
+  <% for (const item of research) { %>
+    <article class="review-card">
+      <p class="eyebrow"><%= item.estado_flujo %></p><h2><%= item.titulo %></h2>
+      <p><%= item.programa %> · <%= item.autor %></p>
+      <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
+      <p>Identificador: <%= item.slug %></p>
+      <% if (item.estado_flujo === 'publicada') { %><p><a class="button" href="/f/<%= item.slug %>">Ver ficha pública</a></p><% } %>
+      <% if (item.estado_flujo === 'seleccionada') { %>
+        <form method="post" action="/admin/investigaciones/<%= item.id %>/publicar">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <label for="territorio-<%= item.id %>">Territorio</label>
+          <select id="territorio-<%= item.id %>" name="territorio_id" required>
+            <option value="">Selecciona un territorio</option>
+            <% for (const territory of territories) { %><option value="<%= territory.id %>"><%= territory.nombre %></option><% } %>
+          </select>
+          <button class="button" type="submit">Publicar ficha</button>
+        </form>
+      <% } %>
+      <% if (['seleccionada','publicada'].includes(item.estado_flujo)) { %>
+        <form method="post" action="/admin/investigaciones/<%= item.id %>/archivar" data-confirm="¿Archivar esta ficha? Dejará de ocupar un cupo del programa.">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button class="text-button" type="submit">Archivar ficha</button>
+        </form>
+      <% } %>
+    </article>
+  <% } %>
+</main>
+<script src="/js/form.js?v=20260929" defer></script>
+<%- include('partials/footer') %>

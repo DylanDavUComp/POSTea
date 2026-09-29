@@ -1,0 +1,18 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container form-page">
+  <div class="form-intro"><p class="eyebrow">Bienvenido de nuevo</p><h1>Ingresa a POSTEA</h1><p>Continúa explorando y participando en las ideas.</p></div>
+  <form class="form-card" action="/ingresar" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <input type="hidden" name="next" value="<%= nextUrl %>">
+    <% if (typeof notice !== 'undefined' && notice) { %><p class="success-note" role="status"><%= notice %></p><% } %>
+    <% if (error) { %><div class="form-alert" role="alert"><%= error %></div><% } %>
+    <label for="email">Correo electrónico</label>
+    <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required value="<%= email %>">
+    <label for="password">Contraseña</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="button form-submit" type="submit">Ingresar</button>
+    <p class="form-bottom">¿Olvidaste tu contraseña? Escribe a IMAGO para que te envíe un enlace de restablecimiento.</p>
+    <p class="form-bottom">¿Aún no tienes cuenta? <a href="/registro?next=<%= encodeURIComponent(nextUrl) %>">Créala aquí</a>.</p>
+  </form>
+</main>
+<%- include('partials/footer') %>

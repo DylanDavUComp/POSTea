@@ -1,0 +1,27 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section panel-page">
+  <p class="eyebrow">Tu investigación en POSTEA</p>
+  <div class="page-heading"><div><h1>Mis investigaciones</h1><p>Guarda tus ideas como borrador y envíalas cuando estén completas.</p></div>
+    <% if (canCreate) { %><a class="button" href="/panel/investigaciones/nueva">Crear ficha</a><% } %>
+  </div>
+  <% if (!windowOpen && user.rol !== 'admin') { %><p class="status-note">La convocatoria para crear o enviar fichas abre el 5 de octubre. Puedes seguir editando tus borradores.</p><% } %>
+  <% if (!user.programa_id) { %><p class="status-note">Tu cuenta aún no tiene un programa asignado.</p><% } %>
+  <% if (!rows.length) { %>
+    <div class="empty-state"><h2>Aún no tienes fichas</h2><p>Cuando comience la convocatoria, podrás registrar tu primera investigación aquí.</p></div>
+  <% } else { %>
+    <div class="research-list">
+      <% rows.forEach(item => { %>
+        <article class="research-list-card">
+          <div><span class="status-pill"><%= item.estado_flujo %></span><h2><%= item.titulo %></h2><p class="muted">Enlace: <%= item.slug %></p>
+            <% if (item.observaciones_revision) { %><p class="status-note">Observaciones: <%= item.observaciones_revision %></p><% } %>
+          </div>
+          <div class="card-actions"><a href="/panel/investigaciones/<%= item.id %>/vista-previa">Vista previa</a>
+            <% if (item.estado_flujo === 'publicada') { %><a href="/f/<%= item.slug %>">Ver ficha pública</a><% } %>
+            <% if (user.rol === 'admin' || ['borrador','devuelta'].includes(item.estado_flujo)) { %><a href="/panel/investigaciones/<%= item.id %>/editar">Editar</a><% } %>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

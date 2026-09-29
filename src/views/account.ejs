@@ -1,0 +1,38 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section account-page">
+  <p class="eyebrow">Tu espacio en POSTEA</p>
+  <h1>Hola, <%= user.nombre %></h1>
+  <% const when = d => d.toLocaleString('es-CO',{timeZone:'America/Bogota',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+     const states = { visible:'Publicado', pendiente:'En revisión', reportado:'En revisión', oculto:'Oculto por IMAGO' }; %>
+  <div class="account-card">
+    <p class="eyebrow">Tu billetera</p>
+    <p class="wallet-big"><%= wallet %> <span class="muted"><%= coinName %></span></p>
+    <p><%= exhibition.open ? 'Repártelas entre las ideas que más te inspiren desde cada ficha.' : exhibition.message %></p>
+    <p><a class="button" href="/muro">Explorar investigaciones</a></p>
+  </div>
+  <section class="account-card section-gap" aria-labelledby="mis-inversiones">
+    <h2 id="mis-inversiones">Mis inversiones</h2>
+    <% if (!investments.length) { %><p>Aún no has invertido. Cuando una idea te inspire, apóyala desde su ficha.</p>
+    <% } else { %><ul class="ledger"><% for (const v of investments) { %>
+      <li><span><% if (v.estado_flujo === 'publicada') { %><a href="/f/<%= v.slug %>"><%= v.titulo %></a><% } else { %><%= v.titulo %><% } %><br><small class="muted"><%= when(v.created_at) %></small></span><strong><%= v.monedas %> <%= coinName %></strong></li>
+    <% } %></ul><% } %>
+  </section>
+  <section class="account-card section-gap" aria-labelledby="mis-comentarios">
+    <h2 id="mis-comentarios">Mis comentarios</h2>
+    <% if (!comments.length) { %><p>Aún no has comentado. Comparte una pregunta, una conexión o una posible aplicación.</p>
+    <% } else { for (const c of comments) { %>
+      <article class="comment">
+        <p class="comment-meta"><span class="status-pill"><%= commentTypes[c.tipo] %></span> <%= states[c.estado] %> · <%= when(c.created_at) %></p>
+        <p class="comment-text"><%= c.texto %></p>
+        <p class="muted">En <% if (c.estado_flujo === 'publicada') { %><a href="/f/<%= c.slug %>#comentarios"><%= c.titulo %></a><% } else { %><%= c.titulo %><% } %></p>
+      </article>
+    <% } } %>
+  </section>
+  <div class="account-card section-gap">
+    <p><strong>Correo:</strong> <%= user.email %></p>
+    <p><strong>Tipo de cuenta:</strong> <%= user.rol %></p>
+    <% if (user.estado === 'pendiente') { %><p class="status-note">Tu cuenta de autor está pendiente de activación por el coordinador de tu programa. Mientras tanto puedes invertir y comentar como visitante.</p><% } %>
+    <form action="/salir" method="post"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="button secondary-button" type="submit">Cerrar sesión</button></form>
+  </div>
+</main>
+<%- include('partials/footer') %>

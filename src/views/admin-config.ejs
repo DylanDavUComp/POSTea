@@ -1,0 +1,46 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Configuración</h1><p>Fechas del cronograma, billetera y funciones activas. Todas las horas son de Bogotá.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/configuracion'}) %>
+  <form class="form-card" method="post" action="/admin/configuracion">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <h2>Cronograma</h2>
+    <p class="field-help">La convocatoria permite a los autores crear y enviar fichas; la exhibición habilita invertir y comentar. Para reabrir la convocatoria, mueve la fecha de cierre.</p>
+    <div class="field-row">
+      <% for (const [key,label] of dateKeys) { %><div><label for="<%= key %>"><%= label %></label><input id="<%= key %>" name="<%= key %>" type="datetime-local" value="<%= dates[key] %>" required></div><% } %>
+    </div>
+    <h2>Billetera</h2>
+    <div class="field-row">
+      <div><label for="saldo_inicial_monedas">Saldo inicial por persona</label><input id="saldo_inicial_monedas" name="saldo_inicial_monedas" type="number" min="1" max="100000" value="<%= config.saldo_inicial_monedas %>" required></div>
+      <div><label for="nombre_moneda">Nombre de la moneda</label><input id="nombre_moneda" name="nombre_moneda" minlength="2" maxlength="30" value="<%= config.nombre_moneda %>" required></div>
+    </div>
+    <p class="field-help">Cambiar el saldo inicial afecta a todas las cuentas, también a las que ya invirtieron.</p>
+    <h2>Funciones</h2>
+    <% for (const [key,label,help] of flags) { %>
+      <label class="check-row"><input type="checkbox" name="<%= key %>" <%= config[key] === true ? 'checked' : '' %>><span><strong><%= label %>.</strong> <%= help %></span></label>
+    <% } %>
+    <button class="button form-submit" type="submit">Guardar configuración</button>
+  </form>
+
+  <section class="card section-gap qr-url <%= config.url_qr_confirmada === true && !provisional ? 'is-confirmed' : '' %>" aria-labelledby="url-qr">
+    <h2 id="url-qr">URL de los QR</h2>
+    <p>Los QR apuntan a <code><%= baseUrl || '(BASE_URL vacía)' %>/f/…?src=qr</code>. Se generan al vuelo desde <code>BASE_URL</code>, así que cambiarla actualiza todos los QR.</p>
+    <% if (provisional) { %><p class="form-alert">BASE_URL apunta a localhost o está vacía: todas las piezas muestran «QR PROVISIONAL – NO IMPRIMIR». Configura la URL definitiva de Render en las variables de entorno.</p><% } %>
+    <% if (config.url_qr_confirmada === true && !provisional) { %>
+      <p class="success-note">URL confirmada: las piezas se pueden imprimir. Después de imprimir, esta URL y los slugs no deben cambiar.</p>
+      <form method="post" action="/admin/configuracion/url-qr" data-confirm="¿Volver a marcar la URL como provisional? Las piezas mostrarán otra vez «NO IMPRIMIR».">
+        <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="accion" value="provisional">
+        <button class="text-button" type="submit">Volver a marcar como provisional</button>
+      </form>
+    <% } else if (!provisional) { %>
+      <form class="form-card flat" method="post" action="/admin/configuracion/url-qr">
+        <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="accion" value="confirmar">
+        <p class="status-note"><strong>Después de imprimir, esta URL y los slugs no deben cambiar.</strong> Verifica que la URL abre la app antes de confirmar.</p>
+        <label class="check-row"><input type="checkbox" name="entiendo" required><span>Entiendo que la URL <strong><%= baseUrl %></strong> quedará impresa en papel.</span></label>
+        <button class="button" type="submit">Confirmar URL para impresión</button>
+      </form>
+    <% } %>
+  </section>
+</main>
+<script src="/js/form.js?v=20260929-3" defer></script>
+<%- include('partials/footer') %>

@@ -1,0 +1,32 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Territorios</h1><p>Los territorios temáticos que agrupan los posts en el muro y en los vidrios.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/territorios'}) %>
+  <% const fields = (t, key) => { %>
+    <label for="nombre-<%= key %>">Nombre</label><input id="nombre-<%= key %>" name="nombre" value="<%= t.nombre || '' %>" required minlength="3" maxlength="80">
+    <div class="field-row">
+      <div><label for="color-<%= key %>">Color</label><input id="color-<%= key %>" name="color_hex" type="color" value="<%= (t.color_hex || '#5B2A9E').toLowerCase() %>"></div>
+      <div><label for="orden-<%= key %>">Orden</label><input id="orden-<%= key %>" name="orden" type="number" min="0" max="999" value="<%= t.orden ?? 0 %>"></div>
+    </div>
+    <label for="icono-<%= key %>">Ícono <span class="optional">(opcional, texto corto o emoji)</span></label><input id="icono-<%= key %>" name="icono" maxlength="40" value="<%= t.icono || '' %>">
+  <% } %>
+  <section class="card" aria-labelledby="nuevo">
+    <h2 id="nuevo">Nuevo territorio</h2>
+    <form class="form-card flat" method="post" action="/admin/territorios"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <% fields({}, 'nuevo') %><button class="button form-submit" type="submit">Crear territorio</button></form>
+  </section>
+  <section class="section-gap" aria-labelledby="listado">
+    <h2 id="listado">Territorios (<%= territories.length %>)</h2>
+    <% for (const t of territories) { %>
+      <details class="review-card admin-item ter-<%= t.id %>">
+        <summary><span class="territory-dot"></span><strong><%= t.nombre %></strong> <span class="muted">· <%= t.usos %> investigaciones · orden <%= t.orden %></span></summary>
+        <form class="form-card flat" method="post" action="/admin/territorios/<%= t.id %>"><input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% fields(t, t.id) %><button class="button" type="submit">Guardar cambios</button></form>
+        <% if (!t.usos) { %><form method="post" action="/admin/territorios/<%= t.id %>" data-confirm="¿Eliminar el territorio «<%= t.nombre %>»?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="accion" value="eliminar"><button class="text-button" type="submit">Eliminar territorio</button></form>
+        <% } else { %><p class="muted">No se puede eliminar mientras tenga investigaciones asignadas.</p><% } %>
+      </details>
+    <% } %>
+  </section>
+</main>
+<script src="/js/form.js?v=20260929-3" defer></script>
+<%- include('partials/footer') %>

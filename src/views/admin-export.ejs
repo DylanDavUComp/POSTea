@@ -1,0 +1,29 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Exportar datos</h1><p>La base de datos gratuita de Render vence y no tiene respaldos: descarga copias con frecuencia, sobre todo durante la exhibición.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/exportar'}) %>
+  <section class="card export-all" aria-labelledby="todo">
+    <h2 id="todo">Todo en un clic</h2>
+    <p>Un ZIP con todos los CSV y el respaldo JSON completo (incluye imágenes).</p>
+    <p><a class="button" href="/admin/exportar/todo.zip" download>Descargar todo (ZIP)</a></p>
+  </section>
+  <div class="dash-grid section-gap">
+    <section class="card" aria-labelledby="csv">
+      <h2 id="csv">CSV para hojas de cálculo</h2>
+      <p class="muted">UTF-8 separado por comas. Las contraseñas nunca se exportan.</p>
+      <ul class="ledger">
+        <% for (const [key,label] of [['investigaciones','Investigaciones (con métricas)'],['usuarios','Usuarios (sin contraseñas)'],['inversiones','Inversiones'],['comentarios','Comentarios'],['visitas','Visitas y escaneos'],['programas','Programas']]) { %>
+          <li><a href="/admin/exportar/<%= key %>.csv" download><%= label %></a><strong><%= counts[key] %> filas</strong></li>
+        <% } %>
+      </ul>
+    </section>
+    <section class="card" aria-labelledby="json">
+      <h2 id="json">Respaldo JSON</h2>
+      <p>Todas las tablas tal como están en la base: sirve para reconstruir la información si la base vence.</p>
+      <p><a class="button secondary-button" href="/admin/exportar/respaldo.json" download>Respaldo completo</a></p>
+      <p><a class="text-link-dark" href="/admin/exportar/respaldo.json?imagenes=0" download>Respaldo sin imágenes (más liviano)</a></p>
+      <p class="muted">Para una copia restaurable de toda la base usa también <code>pg_dump "$DATABASE_URL" &gt; respaldo.sql</code> (ver README).</p>
+    </section>
+  </div>
+</main>
+<%- include('partials/footer') %>

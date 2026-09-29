@@ -1,0 +1,52 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Tablero</h1><p>Así va POSTEA. / tu ARTículo en este momento.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin'}) %>
+  <% const published = flow.find(f => f.label === 'Publicada').n; %>
+  <div class="stat-grid">
+    <div class="stat-tile"><span>Posts publicados</span><strong><%= published %></strong><small>de <%= projected %> proyectados según los cupos</small></div>
+    <div class="stat-tile"><span>Personas registradas</span><strong><%= totals.usuarios %></strong><small><%= roles.map(r => `${r.n} ${r.rol}`).join(' · ') %></small></div>
+    <div class="stat-tile"><span>Escaneos de QR</span><strong><%= totals.escaneos %></strong><small><%= totals.visitas %> aperturas de ficha en total</small></div>
+    <div class="stat-tile"><span><%= coinName %> invertidos</span><strong><%= totals.monedas %></strong><small>en <%= totals.inversiones %> inversiones</small></div>
+    <div class="stat-tile"><span>Comentarios publicados</span><strong><%= totals.comentarios %></strong><small><% if (totals.por_moderar) { %><a href="/admin/moderacion"><%= totals.por_moderar %> por moderar</a><% } else { %>nada pendiente por moderar<% } %></small></div>
+  </div>
+
+  <div class="dash-grid">
+    <section class="card" aria-labelledby="por-estado">
+      <h2 id="por-estado">Posts por estado</h2>
+      <% const maxFlow = Math.max(...flow.map(f => f.n)); %>
+      <table class="bar-table"><thead><tr><th scope="col">Estado</th><th scope="col">Fichas</th><th scope="col"><span class="visually-hidden">Proporción</span></th></tr></thead><tbody>
+        <% for (const f of flow) { %><tr><th scope="row"><%= f.label %></th><td><%= f.n %></td><td><%- include('partials/bar',{value:f.n,max:maxFlow,label:f.label}) %></td></tr><% } %>
+      </tbody></table>
+    </section>
+    <section class="card" aria-labelledby="por-territorio">
+      <h2 id="por-territorio">Publicados por territorio</h2>
+      <% const maxTer = Math.max(...territories.map(t => t.n)); %>
+      <table class="bar-table"><thead><tr><th scope="col">Territorio</th><th scope="col">Posts</th><th scope="col"><span class="visually-hidden">Proporción</span></th></tr></thead><tbody>
+        <% for (const t of territories) { %><tr class="ter-<%= t.id %>"><th scope="row"><span class="territory-dot"></span><%= t.nombre %></th><td><%= t.n %></td><td><%- include('partials/bar',{value:t.n,max:maxTer,label:t.nombre}) %></td></tr><% } %>
+      </tbody></table>
+    </section>
+    <section class="card dash-wide" aria-labelledby="por-dia">
+      <h2 id="por-dia">Aperturas de ficha por día</h2>
+      <p class="muted">Últimos 14 días. Escaneo = llegó por el QR (<code>?src=qr</code>); web = desde el muro o un enlace.</p>
+      <% const maxDay = Math.max(...scans.map(d => d.qr + d.web)); %>
+      <table class="bar-table"><thead><tr><th scope="col">Día</th><th scope="col">Escaneos</th><th scope="col">Web</th><th scope="col">Total</th></tr></thead><tbody>
+        <% for (const d of scans) { const label = new Date(`${d.dia}T12:00:00-05:00`).toLocaleDateString('es-CO',{timeZone:'America/Bogota',weekday:'short',day:'numeric',month:'short'}); %>
+          <tr><th scope="row"><%= label %></th><td><%= d.qr %></td><td><%= d.web %></td><td><%- include("partials/bar",{value:d.qr + d.web,max:maxDay,label:`${label}, aperturas`}) %></td></tr>
+        <% } %>
+      </tbody></table>
+    </section>
+    <section class="card dash-wide" aria-labelledby="por-programa">
+      <h2 id="por-programa">Programas: quién falta</h2>
+      <p class="muted">Programas activos, primero los que tienen menos posts publicados frente a su cupo.</p>
+      <% if (!programs.length) { %><p>Aún no hay programas. <a href="/admin/programas">Impórtalos o créalos aquí</a>.</p><% } else { %>
+      <div class="table-scroll"><table class="bar-table program-table"><thead><tr><th scope="col">Programa</th><th scope="col">Publicados</th><th scope="col">Cupo usado</th><th scope="col">Enviadas</th><th scope="col">En edición</th><th scope="col"><span class="visually-hidden">Avance</span></th></tr></thead><tbody>
+        <% for (const p of programs) { %><tr class="<%= p.publicadas >= p.cupo ? 'is-complete' : '' %>">
+          <th scope="row"><%= p.nombre %><br><small class="muted"><%= p.facultad %></small></th>
+          <td><%= p.publicadas %> de <%= p.cupo %></td><td><%= p.ocupados %> de <%= p.cupo %></td><td><%= p.enviadas %></td><td><%= p.en_edicion %></td>
+          <td><%- include('partials/bar',{value:p.publicadas,max:p.cupo,label:`${p.nombre}, publicados`}) %></td></tr><% } %>
+      </tbody></table></div><% } %>
+    </section>
+  </div>
+</main>
+<%- include('partials/footer') %>

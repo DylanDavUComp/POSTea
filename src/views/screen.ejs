@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <%# Recarga sin JavaScript: cada recarga trae datos nuevos y el siguiente territorio. %>
+  <meta http-equiv="refresh" content="<%= refresh %>">
+  <meta name="robots" content="noindex">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css?v=20260929-9">
+  <link rel="stylesheet" href="/css/catalogos.css">
+</head>
+<body class="screen">
+  <main class="screen-grid">
+    <header class="screen-head">
+      <p class="brand"><strong>POSTEA.</strong><span> / tu <b>ART</b>ículo</span></p>
+      <p class="screen-motto">El conocimiento se comparte, las ideas se conectan.</p>
+    </header>
+    <section class="screen-stats" aria-label="En vivo">
+      <div><strong><%= stats.visitas_hoy %></strong><span>visitas hoy</span></div>
+      <div><strong><%= stats.escaneos %></strong><span>escaneos de QR</span></div>
+      <div><strong><%= stats.registrados %></strong><span>personas registradas</span></div>
+      <div><strong><%= stats.monedas %></strong><span><%= coinName %> invertidos</span></div>
+      <div><strong><%= stats.comentarios %></strong><span>comentarios</span></div>
+    </section>
+    <section class="screen-panel screen-territory <%= current ? `ter-${current.id}` : "" %> <%= showRanking ? "" : "span-2" %>" aria-labelledby="territorio">
+      <% if (current) { %>
+        <p class="eyebrow">Territorio de conexión</p>
+        <h2 id="territorio"><span class="territory-dot"></span><%= current.nombre %></h2>
+        <ul class="screen-list"><% for (const f of featured) { %>
+          <li><strong><%= f.pregunta_gancho || f.titulo %></strong><span><%= f.programa %> · <%= f.facultad %><%= showRanking ? ` · ${f.monedas} ${coinName}` : '' %></span></li>
+        <% } %></ul>
+      <% } else { %><h2 id="territorio">Muy pronto</h2><p>Las investigaciones aparecerán aquí cuando IMAGO las publique.</p><% } %>
+    </section>
+    <% if (showRanking) { %>
+      <section class="screen-panel" aria-labelledby="ranking">
+        <p class="eyebrow">Ranking en vivo</p><h2 id="ranking">Ideas con más apoyo</h2>
+        <% if (!overall.byCoins.length) { %><p>Escanea un QR y sé la primera persona en invertir.</p><% } %>
+        <ol class="screen-rank"><% overall.byCoins.forEach((r, i) => { %><li class="ter-<%= r.territorio_id %>"><span><%= i + 1 %></span><strong><%= r.pregunta_gancho || r.titulo %></strong><em><%= r.monedas %></em></li><% }) %></ol>
+      </section>
+    <% } %>
+    <section class="screen-panel" aria-labelledby="voces">
+      <p class="eyebrow">Lo que dicen</p><h2 id="voces">Últimos comentarios</h2>
+      <% if (!comments.length) { %><p>Escanea un QR y deja la primera pregunta, conexión o aplicación.</p><% } %>
+      <ul class="screen-comments"><% for (const c of comments) { %>
+        <li><span class="status-pill"><%= c.tipoNombre %></span><p>«<%= c.texto.length > 160 ? c.texto.slice(0, 157) + '…' : c.texto %>»</p><small><%= c.autor %> sobre <em><%= c.titulo %></em></small></li>
+      <% } %></ul>
+    </section>
+    <footer class="screen-foot">Escanea el QR de cualquier post para explorar, invertir y comentar · Fundación Universitaria Compensar · Observatorio IMAGO · Vigilada MinEducación</footer>
+  </main>
+</body>
+</html>

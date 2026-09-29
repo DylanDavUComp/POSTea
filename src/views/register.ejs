@@ -1,0 +1,48 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container form-page">
+  <div class="form-intro">
+    <p class="eyebrow">Participa en POSTEA</p>
+    <h1>Crea tu cuenta</h1>
+    <p>Regístrate para participar en las ideas durante la exhibición. Solo te tomará un momento.</p>
+  </div>
+  <form class="form-card" action="/registro" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <input type="hidden" name="next" value="<%= nextUrl %>">
+    <% if (error) { %><div class="form-alert" role="alert"><%= error %></div><% } %>
+    <label for="nombre">Nombre completo</label>
+    <input id="nombre" name="nombre" autocomplete="name" required minlength="2" maxlength="120" value="<%= values.nombre || '' %>">
+
+    <label for="email">Correo electrónico</label>
+    <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" value="<%= values.email || '' %>">
+
+    <label for="password">Contraseña</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="password-help">
+    <p class="field-help" id="password-help">Mínimo 8 caracteres.</p>
+
+    <label for="tipo_persona">Tipo de persona</label>
+    <select id="tipo_persona" name="tipo_persona" required>
+      <option value="">Selecciona una opción</option>
+      <% personTypes.forEach(type => { %><option value="<%= type %>" <%= values.tipo_persona === type ? 'selected' : '' %>><%= type.charAt(0).toUpperCase() + type.slice(1) %></option><% }) %>
+    </select>
+
+    <label for="programa_id">Programa académico <span class="optional">(opcional para visitantes)</span></label>
+    <select id="programa_id" name="programa_id">
+      <option value="">Sin programa</option>
+      <% options.forEach(option => { %><option value="<%= option.id %>" <%= String(values.programa_id) === String(option.id) ? 'selected' : '' %>><%= option.nombre %> · <%= option.facultad %></option><% }) %>
+    </select>
+
+    <label class="check-row" for="wants_to_post">
+      <input id="wants_to_post" type="checkbox" name="wants_to_post" value="si" <%= values.wantsToPost ? 'checked' : '' %> <%= options.length ? '' : 'disabled' %>>
+      <span>Voy a postear una investigación</span>
+    </label>
+    <% if (!options.length) { %><p class="field-help">El registro de autores estará disponible cuando IMAGO cargue los programas.</p><% } else { %><p class="field-help">Un coordinador de tu programa deberá activar tu cuenta de autor.</p><% } %>
+
+    <label class="check-row" for="acepta_datos">
+      <input id="acepta_datos" type="checkbox" name="acepta_datos" value="si" required <%= values.acepta_datos ? 'checked' : '' %>>
+      <span>Autorizo el tratamiento de mis datos para gestionar mi cuenta y participación. Leí el <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.</span>
+    </label>
+    <button class="button form-submit" type="submit">Crear cuenta</button>
+    <p class="form-bottom">¿Ya tienes cuenta? <a href="/ingresar?next=<%= encodeURIComponent(nextUrl) %>">Ingresa aquí</a>.</p>
+  </form>
+</main>
+<%- include('partials/footer') %>

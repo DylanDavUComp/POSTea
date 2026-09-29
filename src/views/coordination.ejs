@@ -1,0 +1,69 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section">
+  <p class="eyebrow">Revisión por programa</p><h1>Coordinación</h1>
+  <p>Activa autores, revisa sus fichas y selecciona las investigaciones que pasarán a IMAGO.</p>
+  <% if (message) { %><p class="success-note" role="status"><%= message %></p><% } %>
+  <% if (!programs.length) { %><p>No tienes programas asignados. Solicita la asignación al administrador.</p><% } %>
+  <% for (const program of programs) { %>
+    <section class="review-program">
+      <h2><%= program.nombre %></h2>
+      <p class="eyebrow"><%= program.seleccionadas %> de <%= program.cupo %> seleccionadas o publicadas</p>
+      <h3>Autores pendientes</h3>
+      <% const pending = authors.filter(a => String(a.programa_id) === String(program.id)); %>
+      <% if (!pending.length) { %><p>No hay solicitudes pendientes.</p><% } %>
+      <% for (const author of pending) { %>
+        <article class="review-card"><h4><%= author.nombre %></h4><p><%= author.email %></p>
+          <div class="review-actions">
+            <% for (const action of ['activar','rechazar']) { %>
+              <form method="post" action="/coordinacion/autores/<%= author.id %>/<%= action %>">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <button class="button" type="submit"><%= action === 'activar' ? 'Activar autor' : 'Rechazar solicitud' %></button>
+              </form>
+            <% } %>
+          </div>
+        </article>
+      <% } %>
+      <h3>Fichas del programa</h3>
+      <% const items = research.filter(i => String(i.programa_id) === String(program.id)); %>
+      <% if (!items.length) { %><p>Aún no hay fichas enviadas.</p><% } %>
+      <% for (const item of items) { %>
+        <article class="review-card">
+          <p class="eyebrow"><%= item.estado_flujo %></p><h4><%= item.titulo %></h4><p>Autor: <%= item.autor %></p>
+          <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
+          <% if (item.estado_flujo === 'publicada') { %>
+            <div class="qr-check">
+              <p><strong>QR:</strong> <%= item.qr_verificado_at ? `verificado el ${item.qr_verificado_at.toLocaleDateString('es-CO',{timeZone:'America/Bogota'})}` : 'sin verificar' %>.
+                Escanéalo o ábrelo y confirma que lleva a esta ficha.</p>
+              <div class="review-actions">
+                <a class="button secondary-button" href="<%= qrUrl(item.slug) %>" target="_blank" rel="noopener">Probar QR</a>
+                <a class="text-link-dark" href="/investigaciones/<%= item.id %>/pieza">Ver pieza</a>
+                <form method="post" action="/coordinacion/investigaciones/<%= item.id %>/verificar-qr"><input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <% if (item.qr_verificado_at) { %><input type="hidden" name="accion" value="desmarcar"><button class="text-button" type="submit">Quitar verificación</button>
+                  <% } else { %><button class="button" type="submit">Marcar QR como verificado</button><% } %></form>
+              </div>
+            </div>
+          <% } %>
+          <% if (item.observaciones_revision) { %><p><strong>Observaciones:</strong> <%= item.observaciones_revision %></p><% } %>
+          <% if (item.estado_flujo === 'enviada') { %>
+            <form method="post" action="/coordinacion/investigaciones/<%= item.id %>/seleccionar">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <button class="button" type="submit" <%= program.seleccionadas >= program.cupo ? 'disabled' : '' %>>Seleccionar para IMAGO</button>
+              <% if (program.seleccionadas >= program.cupo) { %><p>Cupo completo. Devuelve una selección o solicita archivar una ficha antes de seleccionar otra.</p><% } %>
+            </form>
+          <% } %>
+          <% if (['enviada','seleccionada'].includes(item.estado_flujo)) { %>
+            <details><summary>Devolver al autor para ajustes</summary>
+              <form method="post" action="/coordinacion/investigaciones/<%= item.id %>/devolver">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <label for="observaciones-<%= item.id %>">Observaciones (10 a 1000 caracteres)</label>
+                <textarea id="observaciones-<%= item.id %>" name="observaciones" minlength="10" maxlength="1000" required rows="3"></textarea>
+                <button class="button" type="submit">Devolver con observaciones</button>
+              </form>
+            </details>
+          <% } %>
+        </article>
+      <% } %>
+    </section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

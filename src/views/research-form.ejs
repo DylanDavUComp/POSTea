@@ -1,0 +1,61 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section research-editor">
+  <a class="back-link" href="/panel">← Mis investigaciones</a>
+  <p class="eyebrow">Ficha de investigación</p>
+  <h1><%= research ? 'Editar ficha' : 'Nueva ficha' %></h1>
+  <p>Los campos marcados como obligatorios para enviar pueden quedar incompletos mientras guardas el borrador.</p>
+  <% if (research) { %><p class="slug-note"><strong>Enlace:</strong> <%= research.slug %> · <strong>Estado:</strong> <%= research.estado_flujo %></p><% } %>
+  <% if (error) { %><div class="form-alert" role="alert" data-form-error tabindex="-1"><strong>No se pudo guardar o enviar:</strong> <%= error %></div><% } %>
+  <form class="editor-form" method="post" enctype="multipart/form-data" novalidate action="<%= research ? '/panel/investigaciones/' + research.id + '/editar' : '/panel/investigaciones/nueva' %>">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <fieldset class="editor-section"><legend>01 · La idea</legend>
+      <label for="titulo">Título <span class="required">*</span></label>
+      <input id="titulo" name="titulo" required maxlength="90" data-counter value="<%= values.titulo || '' %>">
+      <output for="titulo" class="counter">0 / 90</output>
+      <label for="subtitulo">Subtítulo <span class="optional">(opcional)</span></label>
+      <input id="subtitulo" name="subtitulo" maxlength="180" value="<%= values.subtitulo || '' %>">
+      <label for="pregunta_gancho">Pregunta o frase para el post <span class="required">*</span></label>
+      <input id="pregunta_gancho" name="pregunta_gancho" maxlength="80" data-counter value="<%= values.pregunta_gancho || '' %>">
+      <output for="pregunta_gancho" class="counter">0 / 80</output>
+      <div class="editor-grid">
+        <div><label for="tipo">Tipo de proyecto <span class="required">*</span></label><select id="tipo" name="tipo"><option value="">Selecciona</option>
+          <% [['investigacion','Investigación'],['semillero','Semillero'],['proyecto_grado','Proyecto de grado'],['pasantia','Pasantía']].forEach(option => { %><option value="<%= option[0] %>" <%= values.tipo === option[0] ? 'selected' : '' %>><%= option[1] %></option><% }) %>
+        </select></div>
+        <div><label for="estado_investigacion">Estado <span class="required">*</span></label><select id="estado_investigacion" name="estado_investigacion"><option value="">Selecciona</option>
+          <option value="en_desarrollo" <%= values.estado_investigacion === 'en_desarrollo' ? 'selected' : '' %>>En desarrollo</option><option value="terminada" <%= values.estado_investigacion === 'terminada' ? 'selected' : '' %>>Terminada</option>
+        </select></div>
+      </div>
+    </fieldset>
+    <fieldset class="editor-section"><legend>02 · La ficha</legend>
+      <% [['descripcion','Descripción'],['objetivo','Objetivo'],['metodologia','Metodología'],['resultados','Resultados']].forEach(field => { %>
+        <label for="<%= field[0] %>"><%= field[1] %> <span class="required">*</span></label>
+        <textarea id="<%= field[0] %>" name="<%= field[0] %>" maxlength="900" rows="5" data-counter data-min-send="80" aria-describedby="<%= field[0] %>-help"><%= values[field[0]] || '' %></textarea>
+        <div class="field-meta"><span id="<%= field[0] %>-help">Entre 80 y 900 caracteres para enviar.</span><output for="<%= field[0] %>" class="counter">0 / 900</output></div>
+      <% }) %>
+    </fieldset>
+    <fieldset class="editor-section"><legend>03 · Personas e imagen</legend>
+      <label for="investigadores">Investigadores <span class="required">*</span></label>
+      <textarea id="investigadores" name="investigadores" rows="5" aria-describedby="investigadores-help"><%= values.investigadores || '' %></textarea>
+      <p class="field-help" id="investigadores-help">Escribe entre 1 y 6 nombres completos, uno por línea.</p>
+      <label for="imagen">Imagen principal <span class="required">*</span></label>
+      <% if (research && research.imagen) { %><img class="editor-image" src="/media/investigaciones/<%= research.id %>" alt="Imagen actual de la investigación"><p class="field-help">Si eliges otra imagen, reemplazará la actual.</p><% } %>
+      <input id="imagen" type="file" name="imagen" accept="image/jpeg,image/png,image/webp" aria-describedby="imagen-help">
+      <p class="field-help" id="imagen-help">JPG, PNG o WebP · máximo 5 MB. Se convierte a WebP antes de guardar.</p>
+      <label for="imagen_credito">Crédito de imagen <span class="optional">(opcional)</span></label>
+      <input id="imagen_credito" name="imagen_credito" maxlength="180" value="<%= values.imagen_credito || '' %>">
+      <label class="check-row" for="derechos_imagen_confirmados"><input id="derechos_imagen_confirmados" type="checkbox" name="derechos_imagen_confirmados" value="si" <%= values.derechos_imagen_confirmados ? 'checked' : '' %>><span>Tengo derechos de uso de esta imagen.</span></label>
+    </fieldset>
+    <fieldset class="editor-section"><legend>04 · Enlace y publicación</legend>
+      <label for="sharepoint_url">Ficha en PDF (SharePoint) <span class="optional">(opcional)</span></label>
+      <input id="sharepoint_url" type="url" name="sharepoint_url" placeholder="https://..." value="<%= values.sharepoint_url || '' %>">
+      <% if (research && research.estado_flujo === 'borrador') { %><label class="check-row" for="regenerar_slug"><input id="regenerar_slug" type="checkbox" name="regenerar_slug" value="si"><span>Generar un enlace nuevo a partir del título.</span></label><p class="field-help">El enlace queda fijo al publicar porque estará impreso en el QR.</p><% } %>
+    </fieldset>
+    <div class="editor-actions">
+      <% if (error) { %><p class="form-alert action-error"><%= error %></p><% } %>
+      <button class="button secondary-button" type="submit" name="intent" value="borrador">Guardar borrador</button>
+      <% if ((!research || ['borrador','devuelta'].includes(research.estado_flujo)) && (windowOpen || user.rol === 'admin')) { %><button class="button" type="submit" name="intent" value="enviar">Enviar ficha</button><% } else if (!windowOpen && user.rol !== 'admin') { %><p class="field-help">El envío estará disponible durante la convocatoria.</p><% } %>
+    </div>
+  </form>
+  <script src="/js/form.js?v=20260928-2" defer></script>
+</main>
+<%- include('partials/footer') %>

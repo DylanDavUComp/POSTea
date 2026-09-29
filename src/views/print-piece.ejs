@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css?v=20260929-10">
+  <link rel="stylesheet" href="/css/catalogos.css">
+</head>
+<body class="print-doc">
+  <header class="print-toolbar">
+    <a class="back-link" href="<%= back %>">← Volver</a>
+    <div>
+      <h1><%= pieces.length === 1 ? 'Pieza imprimible' : `Lote de ${pieces.length} piezas` %></h1>
+      <p class="preview-warning">Imagen de referencia. Diseño sujeto a ajustes. Haz una prueba de impresión antes de producir todas las piezas.</p>
+      <p class="muted">Medio pliego vertical (50 × 70 cm). En el diálogo de impresión elige <strong>Guardar como PDF</strong>, márgenes <strong>Ninguno</strong>, escala <strong>100 %</strong> y activa <strong>Gráficos de fondo</strong>.</p>
+      <% const blocked = pieces.filter(p => p.provisional); if (blocked.length) { %>
+        <p class="form-alert" role="alert"><strong>QR PROVISIONAL – NO IMPRIMIR.</strong> <%= blocked.length === pieces.length ? 'Estas piezas' : `${blocked.length} de ${pieces.length} piezas` %> no están listas: <%= [...new Set(blocked.map(p => p.provisional))].join('; ') %>.</p>
+      <% } %>
+    </div>
+    <div class="print-actions">
+      <button class="button" type="button" data-print>Imprimir / Guardar como PDF</button>
+      <% if (pieces.length === 1) { const p = pieces[0]; %>
+        <a class="button secondary-button" href="<%= p.url %>" target="_blank" rel="noopener">Probar QR</a>
+        <a class="text-link-dark" href="/investigaciones/<%= p.id %>/qr.png?descargar=1">QR en PNG</a>
+        <a class="text-link-dark" href="/investigaciones/<%= p.id %>/qr.svg?descargar=1">QR en SVG</a>
+      <% } %>
+    </div>
+  </header>
+  <main class="sheets">
+    <% for (const p of pieces) { %>
+      <article class="sheet fac-<%= p.facultad_id %> <%= p.territorio_id ? `ter-${p.territorio_id}` : '' %>" aria-label="Pieza: <%= p.titulo %>">
+        <% if (p.provisional) { %><div class="sheet-watermark" aria-hidden="true">QR PROVISIONAL – NO IMPRIMIR</div><% } %>
+        <% if (p.territorio) { %><span class="sheet-territory"><%= p.territorio %></span><% } %>
+        <div class="sheet-post">
+          <div class="sheet-head">
+            <span class="sheet-avatar">U</span>
+            <div><strong>UCompensar</strong><span><%= p.facultad %></span></div>
+            <span class="sheet-more" aria-hidden="true">•••</span>
+          </div>
+          <div class="sheet-image">
+            <% if (p.tiene_imagen) { %><img src="/media/investigaciones/<%= p.id %>" alt="Imagen de la investigación"><% } else { %><span>Imagen pendiente</span><% } %>
+          </div>
+          <div class="sheet-icons" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-3.2-6.4A8 8 0 0 1 20 12zm0 0v8l-3-2.5"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M21 4 3 11l7 2.5L12.5 21zM10 13.5 21 4"/></svg>
+            <span class="sheet-dots"><i></i><i></i><i></i></span>
+            <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+          </div>
+          <div class="sheet-body">
+            <p class="sheet-label">Investigación · <%= p.programa %></p>
+            <h2 class="sheet-question"><%= p.pregunta_gancho || p.titulo %></h2>
+            <p class="sheet-researchers"><%= p.investigadores.join(' · ') %></p>
+          </div>
+          <div class="sheet-cta">
+            <div class="sheet-qr<%= p.provisional ? ' is-provisional' : '' %>"><%- p.qr %></div>
+            <div>
+              <p class="sheet-scan">Escanea y conoce la investigación</p>
+              <p class="sheet-steps">Descubre · Escanea · Explora · Conecta</p>
+              <p class="sheet-logo"><strong>POSTEA.</strong> / tu <b>ART</b>ículo</p>
+            </div>
+          </div>
+        </div>
+        <p class="sheet-foot">Fundación Universitaria Compensar · Observatorio IMAGO · Semana de Innovación y Emprendimiento 2026 · Vigilada MinEducación</p>
+      </article>
+    <% } %>
+  </main>
+  <script src="/js/form.js?v=20260929-4" defer></script>
+</body>
+</html>

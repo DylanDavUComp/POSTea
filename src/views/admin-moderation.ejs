@@ -1,0 +1,38 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Moderación</h1><p>Revisa los comentarios reportados o en espera y decide si se muestran.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/moderacion'}) %>
+  <% const notes={visible:'El comentario quedó visible.',oculto:'El comentario quedó oculto.',ajustes:'Los ajustes de moderación se guardaron.'}; if (notes[resultado]) { %><p class="success-note" role="status"><%= notes[resultado] %></p><% } %>
+  <nav class="moderation-summary" aria-label="Secciones">
+    <% for (const section of sections) { %><a href="#<%= section.estado %>"><strong><%= section.items.length %></strong> <%= section.heading %></a><% } %>
+  </nav>
+  <% for (const section of sections) { %>
+    <section class="review-program" id="<%= section.estado %>" aria-labelledby="t-<%= section.estado %>">
+      <h2 id="t-<%= section.estado %>"><%= section.heading %></h2><p class="muted"><%= section.help %></p>
+      <% if (!section.items.length) { %><p>No hay comentarios en esta sección.</p><% } %>
+      <% for (const c of section.items) { %>
+        <article class="review-card" id="comentario-<%= c.id %>">
+          <p class="comment-meta"><span class="status-pill"><%= types[c.tipo] %></span> <%= c.nombre %> · <%= c.email %> · <%= c.created_at.toLocaleString('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'}) %></p>
+          <p class="comment-text"><%= c.texto %></p>
+          <p class="muted">En <a href="/f/<%= c.slug %>#comentarios"><%= c.titulo %></a><% if (c.reportes) { %> · <strong><%= c.reportes %> reporte<%= c.reportes===1?'':'s' %></strong><% } %><% if (c.moderado_at) { %> · revisado por IMAGO<% } %></p>
+          <div class="review-actions">
+            <% if (c.estado !== 'visible') { %><form method="post" action="/admin/moderacion/<%= c.id %>/mostrar"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="button" type="submit"><%= c.estado==='pendiente' ? 'Aprobar' : 'Mostrar' %></button></form><% } %>
+            <% if (c.estado !== 'oculto') { %><form method="post" action="/admin/moderacion/<%= c.id %>/ocultar"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="button secondary-button" type="submit">Ocultar</button></form><% } %>
+          </div>
+        </article>
+      <% } %>
+    </section>
+  <% } %>
+  <section class="review-program" aria-labelledby="ajustes">
+    <h2 id="ajustes">Ajustes de moderación</h2>
+    <form class="form-card" method="post" action="/admin/moderacion-ajustes">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label class="check-row"><input type="checkbox" name="moderacion_previa" <%= previa ? 'checked' : '' %>><span><strong>Moderación previa:</strong> los comentarios nuevos esperan tu aprobación antes de publicarse.</span></label>
+      <label for="palabras">Palabras no permitidas</label>
+      <p class="field-help">Una por línea o separadas por comas. Se comparan sin tildes ni mayúsculas, como palabra completa (incluye plurales).</p>
+      <textarea id="palabras" name="palabras" rows="8"><%= words.join('\n') %></textarea>
+      <button class="button form-submit" type="submit">Guardar ajustes</button>
+    </form>
+  </section>
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,49 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Usuarios</h1><p>Cambia roles, asigna coordinadores, bloquea cuentas y genera enlaces para restablecer contraseñas.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/usuarios'}) %>
+  <% if (resetLink) { %>
+    <div class="card reset-link" role="status">
+      <h2>Enlace de restablecimiento para <%= resetLink.email %></h2>
+      <p>Cópialo y envíalo a la persona por un canal seguro. Funciona <strong>una sola vez</strong> durante <%= resetLink.horas %> horas y no se volverá a mostrar.</p>
+      <label for="enlace">Enlace</label><input id="enlace" class="copy-field" readonly value="<%= resetLink.url %>" data-select-all>
+    </div>
+  <% } %>
+  <form class="wall-filters form-card" method="get" action="/admin/usuarios">
+    <div class="search-field"><label for="q">Buscar por nombre o correo</label><input id="q" name="q" type="search" value="<%= filters.q %>" maxlength="100"></div>
+    <div><label for="rol">Rol</label><select id="rol" name="rol"><option value="">Todos</option><% for (const r of roles) { %><option <%= filters.rol === r ? 'selected' : '' %>><%= r %></option><% } %></select></div>
+    <div><label for="estado">Estado</label><select id="estado" name="estado"><option value="">Todos</option><% for (const s of states) { %><option <%= filters.estado === s ? 'selected' : '' %>><%= s %></option><% } %></select></div>
+    <div class="card-actions"><button class="button" type="submit">Filtrar</button><a href="/admin/usuarios">Limpiar</a></div>
+  </form>
+  <p role="status"><strong><%= total %></strong> cuentas<%= total > 50 ? ` · página ${page} de ${Math.ceil(total / 50)}` : '' %></p>
+  <% for (const u of users) { const self = String(u.id) === String(user.id); %>
+    <details class="review-card admin-item">
+      <summary><strong><%= u.nombre %></strong> <span class="muted">· <%= u.email %></span> <span class="status-pill"><%= u.rol %></span><% if (u.estado !== 'activo') { %> <span class="status-pill state-<%= u.estado %>"><%= u.estado %></span><% } %></summary>
+      <p class="muted"><%= u.tipo_persona %><%= u.programa ? ` · ${u.programa}` : '' %> · registrada el <%= u.created_at.toLocaleDateString('es-CO',{timeZone:'America/Bogota'}) %><%= u.last_login_at ? ` · último ingreso ${u.last_login_at.toLocaleDateString('es-CO',{timeZone:'America/Bogota'})}` : '' %></p>
+      <form class="form-card flat" method="post" action="/admin/usuarios/<%= u.id %>">
+        <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="back" value="<%= back %>">
+        <div class="field-row">
+          <div><label for="rol-<%= u.id %>">Rol</label><select id="rol-<%= u.id %>" name="rol" <%= self ? 'disabled' : '' %>><% for (const r of roles) { %><option <%= u.rol === r ? 'selected' : '' %>><%= r %></option><% } %></select></div>
+          <div><label for="estado-<%= u.id %>">Estado</label><select id="estado-<%= u.id %>" name="estado" <%= self ? 'disabled' : '' %>><% for (const s of states) { %><option <%= u.estado === s ? 'selected' : '' %>><%= s %></option><% } %></select></div>
+        </div>
+        <% if (self) { %><input type="hidden" name="rol" value="admin"><input type="hidden" name="estado" value="activo"><p class="muted">Es tu cuenta: no puedes quitarte el rol de admin ni bloquearte.</p><% } %>
+        <label for="programa-<%= u.id %>">Programa <span class="optional">(obligatorio para autores)</span></label>
+        <select id="programa-<%= u.id %>" name="programa_id"><option value="">Sin programa</option><% for (const p of programs) { %><option value="<%= p.id %>" <%= String(p.id) === String(u.programa_id) ? 'selected' : '' %>><%= p.nombre %></option><% } %></select>
+        <fieldset class="coord-list"><legend>Programas que coordina <span class="optional">(solo para el rol coordinador)</span></legend>
+          <% if (!programs.length) { %><p class="muted">Aún no hay programas.</p><% } %>
+          <% for (const p of programs) { %><label class="check-row"><input type="checkbox" name="coordina" value="<%= p.id %>" <%= u.coordina.includes(String(p.id)) ? 'checked' : '' %>><span><%= p.nombre %></span></label><% } %>
+        </fieldset>
+        <button class="button" type="submit">Guardar cambios</button>
+      </form>
+      <form method="post" action="/admin/usuarios/<%= u.id %>/restablecer" data-confirm="¿Generar un enlace para que <%= u.email %> cree una nueva contraseña? El enlace anterior dejará de funcionar.">
+        <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="back" value="<%= back %>">
+        <button class="text-button" type="submit">Generar enlace de restablecimiento</button>
+      </form>
+    </details>
+  <% } %>
+  <% if (total > 50) { const qs = n => '/admin/usuarios?' + new URLSearchParams({ ...filters, pagina: n }).toString(); %>
+    <nav class="pager" aria-label="Páginas"><% if (page > 1) { %><a class="button secondary-button" href="<%= qs(page - 1) %>">Anterior</a><% } %><% if (page * 50 < total) { %><a class="button secondary-button" href="<%= qs(page + 1) %>">Siguiente</a><% } %></nav>
+  <% } %>
+</main>
+<script src="/js/form.js?v=20260929-3" defer></script>
+<%- include('partials/footer') %>

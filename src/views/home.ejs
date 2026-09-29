@@ -1,0 +1,43 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido">
+  <section class="hero">
+    <div class="container hero-inner">
+      <% if (farewell) { %><p class="success-note" role="status">Cerraste sesión. ¡Gracias por pasar por POSTEA!</p><% } %>
+      <p class="eyebrow">Semana de Innovación y Emprendimiento 2026</p>
+      <h1>El conocimiento se comparte, <span>las ideas se conectan.</span></h1>
+      <p class="hero-copy">POSTEA. / tu ARTículo lleva la investigación a los espacios cotidianos del campus. Descubre una idea, escanea su código y conoce a quienes la hacen posible.</p>
+      <div class="hero-actions">
+        <a class="button" href="/muro">Explorar investigaciones</a>
+        <% if (typeof user !== 'undefined' && user) { %><a class="button" href="/mi-cuenta">Ver mi cuenta</a>
+        <% } else { %><a class="button" href="/registro">Crear mi cuenta</a><a class="text-link" href="/ingresar">Ya tengo cuenta</a><% } %>
+      </div>
+      <p class="event-date">Exhibición · <%= milestones[3].label %> de 2026</p>
+    </div>
+  </section>
+  <section class="container section" aria-labelledby="como-funciona">
+    <p class="eyebrow">Una vitrina para investigar juntos</p>
+    <h2 id="como-funciona">Así funciona</h2>
+    <div class="steps">
+      <article class="card"><span class="step-number">01</span><h3>Descubre</h3><p>Encuentra las investigaciones en los vidrios del piso 10 con terraza.</p></article>
+      <article class="card"><span class="step-number">02</span><h3>Escanea</h3><p>Usa el QR de cada post para abrir la ficha en tu celular.</p></article>
+      <article class="card"><span class="step-number">03</span><h3>Explora</h3><p>Lee la pregunta, el proceso y los resultados de cada idea.</p></article>
+      <article class="card"><span class="step-number">04</span><h3>Conecta</h3><p>Durante la exhibición podrás apoyar ideas y compartir comentarios.</p></article>
+    </div>
+  </section>
+  <section class="container section participation" aria-labelledby="participan">
+    <div><p class="eyebrow">Investigación en movimiento</p><h2 id="participan">¿Quiénes participan?</h2><p>Investigadores, semilleros, proyectos de grado y pasantes de UCompensar. Cada programa selecciona hasta tres investigaciones.</p></div>
+    <div class="date-card"><span>Convocatoria</span><strong><%= milestones[0].label %> – <%= milestones[1].label %></strong><span>Exhibición</span><strong><%= milestones[3].label %></strong></div>
+  </section>
+  <section class="container section" aria-labelledby="cronograma">
+    <p class="eyebrow">Semana de Innovación y Emprendimiento 2026</p>
+    <h2 id="cronograma">Cronograma</h2>
+    <ol class="timeline">
+      <% for (const step of milestones) { %><li class="card<%= step.current ? ' is-current' : '' %>"<%- step.current ? ' aria-current="step"' : '' %>>
+        <% if (step.current) { %><span class="now-pill">Ahora</span><% } %>
+        <strong class="timeline-date"><%= step.label %></strong><h3><%= step.name %></h3><p><%= step.detail %></p>
+      </li><% } %>
+    </ol>
+    <p class="hero-actions"><a class="button" href="/muro">Ir al muro de investigaciones</a></p>
+  </section>
+</main>
+<%- include('partials/footer') %>

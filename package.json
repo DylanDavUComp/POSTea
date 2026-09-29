@@ -1,0 +1,44 @@
+{
+  "name": "postea-imago",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9 <25"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "test:phase3": "node tests/phase3-smoke.js",
+    "test:phase4": "node tests/phase4-smoke.js",
+    "test:phase5": "node tests/phase5-smoke.js",
+    "test:phase6": "node tests/phase6-smoke.js",
+    "test:phase7": "node tests/phase7-smoke.js",
+    "test:phase8": "node tests/phase8-smoke.js",
+    "test:phase9": "node tests/phase9-smoke.js",
+    "test:nav": "node tests/navigation-smoke.js",
+    "demo:exhibicion": "node scripts/demo-exhibicion.js",
+    "test:migrations": "node tests/migration-smoke.js",
+    "test": "npm run test:migrations && npm run test:nav && npm run test:phase3 && npm run test:phase4 && npm run test:phase5 && npm run test:phase6 && npm run test:phase7 && npm run test:phase8 && npm run test:phase9"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^17.2.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.0",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "multer": "^2.0.2",
+    "pg": "^8.16.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0"
+  }
+}

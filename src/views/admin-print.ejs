@@ -1,0 +1,34 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Impresión</h1><p>Piezas de medio pliego y códigos QR de las investigaciones seleccionadas y publicadas.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/impresion'}) %>
+  <section class="card <%= globalReason ? 'qr-warning' : 'qr-url is-confirmed' %>" aria-labelledby="estado-url">
+    <h2 id="estado-url"><%= globalReason ? 'QR PROVISIONAL – NO IMPRIMIR' : 'URL confirmada para impresión' %></h2>
+    <p>Los QR apuntan a <code><%= baseUrl || '(BASE_URL vacía)' %>/f/…?src=qr</code><%= globalReason ? `, pero ${globalReason}.` : '.' %></p>
+    <% if (globalReason) { %><p>Todas las piezas y QR descargados llevan la marca de provisional. Revisa <a href="/admin/configuracion#url-qr">Configuración → URL de los QR</a>.</p>
+    <% } else { %><p>Después de imprimir, esta URL y los slugs no deben cambiar. Las fichas que aún no están publicadas siguen marcadas como provisionales.</p><% } %>
+  </section>
+  <div class="card-actions section-gap">
+    <a class="button" href="/admin/impresion/lote?todas=1">Imprimir todas las publicadas</a>
+    <a class="button secondary-button" href="/admin/impresion/qr.zip" download>Descargar todos los QR (ZIP)</a>
+  </div>
+  <% if (!items.length) { %><p class="section-gap">Aún no hay fichas seleccionadas ni publicadas.</p><% } else { %>
+  <form class="section-gap" method="get" action="/admin/impresion/lote">
+    <div class="table-scroll"><table class="bar-table print-table">
+      <thead><tr><th scope="col"><span class="visually-hidden">Elegir</span></th><th scope="col">Investigación</th><th scope="col">Estado</th><th scope="col">QR</th><th scope="col">Acciones</th></tr></thead>
+      <tbody>
+        <% for (const item of items) { %><tr class="<%= item.territorio_id ? `ter-${item.territorio_id}` : '' %>">
+          <td><input type="checkbox" name="id" value="<%= item.id %>" id="lote-<%= item.id %>" aria-label="Incluir <%= item.titulo %> en el lote"></td>
+          <th scope="row"><label for="lote-<%= item.id %>"><%= item.titulo %></label><br><small class="muted"><%= item.programa %><% if (item.territorio) { %> · <span class="territory-dot"></span><%= item.territorio %><% } %></small><br><small class="muted"><%= item.slug %></small></th>
+          <td><%= item.estado_flujo === 'publicada' ? 'Publicada' : 'Seleccionada (sin publicar)' %><% if (!item.tiene_imagen) { %><br><small class="muted">Sin imagen</small><% } %></td>
+          <td><% if (item.provisional) { %><span class="status-pill state-pendiente">Provisional</span><% } else { %><span class="status-pill">Lista</span><% } %>
+            <br><small class="muted"><%= item.qr_verificado_at ? `Verificado ${item.qr_verificado_at.toLocaleDateString('es-CO',{timeZone:'America/Bogota'})}` : 'Sin verificar' %></small></td>
+          <td class="print-links"><a href="/admin/impresion/<%= item.id %>">Pieza</a> · <a href="/investigaciones/<%= item.id %>/qr.png?descargar=1">PNG</a> · <a href="/investigaciones/<%= item.id %>/qr.svg?descargar=1">SVG</a> · <a href="<%= item.url %>" target="_blank" rel="noopener">Probar QR</a></td>
+        </tr><% } %>
+      </tbody>
+    </table></div>
+    <button class="button form-submit" type="submit">Imprimir las seleccionadas en un solo documento</button>
+  </form>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

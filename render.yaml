@@ -1,0 +1,53 @@
+# Blueprint de Render para POSTEA. / tu ARTículo (plan gratuito).
+# Crea el servicio web y la base PostgreSQL en la misma región (Virginia, la más cercana a Bogotá).
+# Render → New → Blueprint → elige este repositorio. Te pedirá los valores marcados con `sync: false`.
+
+services:
+  - type: web
+    name: postea-imago
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: npm ci
+    # Aplica migraciones nuevas y arranca; al arrancar se crea el admin inicial si aún no existe.
+    startCommand: npm run migrate && npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Node 24 LTS (Node 20 dejó de recibir parches de seguridad el 30/04/2026). Ver DECISIONES.md.
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: America/Bogota
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postea-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      # URL pública sin "/" final, p. ej. https://postea-imago.onrender.com. Define a dónde apuntan los QR.
+      - key: BASE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      # Mínimo 12 caracteres. Solo se usa para crear el admin la primera vez.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Opcional, separado por comas (p. ej. ucompensar.edu.co). Vacío = cualquier dominio.
+      - key: ALLOWED_EMAIL_DOMAINS
+        sync: false
+      - key: VISITOR_DOMAIN_RESTRICTED
+        value: "false"
+
+databases:
+  - name: postea-db
+    plan: free
+    region: virginia
+    databaseName: postea
+    user: postea
+    postgresMajorVersion: "16"
+    # Sin acceso externo por defecto; la app usa la conexión interna. Para pg_dump desde tu equipo,
+    # agrega tu IP en Render → postea-db → Networking.
+    ipAllowList: []

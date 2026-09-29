@@ -1,0 +1,45 @@
+<%- include('partials/head', { title }) %>
+<main id="contenido" class="container section preview-page">
+  <a class="back-link" href="<%= typeof backUrl !== 'undefined' ? backUrl : '/panel' %>">← Volver al panel</a>
+  <% if (resultado === 'guardada') { %><div class="success-note" role="status">La ficha quedó guardada. Puedes seguir editándola desde tu panel.</div><% } %>
+  <% if (resultado === 'enviada') { %><div class="success-note" role="status">La ficha fue enviada para revisión. Puedes consultar su estado desde tu panel.</div><% } %>
+  <p class="eyebrow">Vista previa · <%= research.estado_flujo %></p>
+  <h1><%= research.titulo %></h1>
+  <% if (research.estado_flujo === 'publicada') { %><p><a class="button" href="/f/<%= research.slug %>">Ver ficha pública</a></p><% } %>
+  <p class="preview-warning">Imagen de referencia. Diseño sujeto a ajustes. Haz una prueba de impresión antes de producir piezas.</p>
+  <div class="preview-actions"><% if (canEdit) { %><a class="button" href="/panel/investigaciones/<%= research.id %>/editar">Editar ficha</a><% } %>
+    <% if (canEdit && ['borrador','devuelta'].includes(research.estado_flujo) && String(research.autor_id) === String(user.id)) { %>
+      <form method="post" action="/panel/investigaciones/<%= research.id %>/eliminar" data-confirm="¿Eliminar este borrador?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="text-button" type="submit">Eliminar borrador</button></form>
+    <% } %>
+  </div>
+  <div class="preview-actions qr-actions">
+    <a class="button secondary-button" href="/investigaciones/<%= research.id %>/pieza">Ver pieza imprimible (50 × 70 cm)</a>
+    <a class="text-link-dark" href="/investigaciones/<%= research.id %>/qr.png?descargar=1">Descargar QR (PNG)</a>
+    <a class="text-link-dark" href="/investigaciones/<%= research.id %>/qr.svg?descargar=1">Descargar QR (SVG)</a>
+  </div>
+  <% if (research.estado_flujo !== 'publicada') { %><p class="status-note">El QR queda marcado como provisional hasta que IMAGO publique la ficha: antes de eso su enlace todavía puede cambiar.</p><% } %>
+  <div class="preview-grid">
+    <section class="post-preview" aria-labelledby="post-title">
+      <div class="post-top"><span class="post-avatar">U</span><div><strong>UCompensar</strong><small><%= research.facultad_nombre %></small></div><span aria-hidden="true">•••</span></div>
+      <% if (research.imagen) { %><img class="post-image" src="/media/investigaciones/<%= research.id %>" alt="Imagen de <%= research.titulo %>"><% } else { %><div class="image-placeholder">Imagen pendiente</div><% } %>
+      <div class="post-body"><p class="eyebrow">Investigación</p><h2 id="post-title"><%= research.pregunta_gancho || research.titulo %></h2>
+        <p><%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Investigadores pendientes' %></p>
+        <div class="post-icons" aria-hidden="true">♡　▢　➤　　▣</div>
+        <div class="preview-qr"><img src="/investigaciones/<%= research.id %>/qr.svg" alt="Código QR de esta investigación" width="160" height="160"><p>Escanea y conoce la investigación</p></div>
+      </div>
+    </section>
+    <article class="fiche-preview">
+      <p class="eyebrow">Ficha de investigación</p><h2><%= research.titulo %></h2>
+      <% if (research.subtitulo) { %><p class="subtitle"><%= research.subtitulo %></p><% } %>
+      <p><strong><%= research.facultad_nombre %></strong> · <%= research.programa_nombre %></p>
+      <p><strong>Investigadores:</strong> <%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Pendiente' %></p>
+      <% [['01','Descripción','descripcion'],['02','Objetivo','objetivo'],['03','Metodología','metodologia'],['04','Resultados','resultados']].forEach(section => { %>
+        <section class="fiche-section"><span><%= section[0] %></span><h3><%= section[1] %></h3><p><%= research[section[2]] || 'Pendiente por completar.' %></p></section>
+      <% }) %>
+      <% if (research.sharepoint_url) { %><p><a href="<%= research.sharepoint_url %>" target="_blank" rel="noopener noreferrer">Ver ficha en PDF (SharePoint)</a></p><% } %>
+      <p class="preview-warning">Esta vista es privada. La ficha pública estará disponible cuando IMAGO la publique.</p>
+    </article>
+  </div>
+  <script src="/js/form.js" defer></script>
+</main>
+<%- include('partials/footer') %>

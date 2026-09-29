@@ -1,0 +1,30 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section">
+  <div class="page-heading"><div><p class="eyebrow">Semana de Innovación y Emprendimiento 2026</p><h1>Ranking de ideas</h1><p>Las investigaciones que más apoyo y conversación han despertado.</p></div></div>
+  <% if (!allowed) { %>
+    <div class="empty-state"><h2>El ranking se publicará pronto</h2><p>Mientras tanto, explora las investigaciones y apoya las que más te inspiren.</p><p><a class="button" href="/muro">Ir al muro</a></p></div>
+  <% } else { %>
+    <% if (preview) { %><p class="status-note">Vista previa de admin: el ranking aún no es público. Actívalo en <a href="/admin/configuracion">Configuración</a>.</p><% } %>
+    <form class="wall-filters form-card" method="get" action="/ranking">
+      <div><label for="facultad">Facultad</label><select id="facultad" name="facultad"><option value="">Todas</option><% for (const f of faculties) { %><option value="<%= f.id %>" <%= String(f.id) === filters.facultad ? 'selected' : '' %>><%= f.nombre %></option><% } %></select></div>
+      <div><label for="territorio">Territorio</label><select id="territorio" name="territorio"><option value="">Todos</option><% for (const t of territories) { %><option value="<%= t.id %>" <%= String(t.id) === filters.territorio ? 'selected' : '' %>><%= t.nombre %></option><% } %></select></div>
+      <div class="card-actions"><button class="button" type="submit">Filtrar</button><a href="/ranking">Limpiar</a></div>
+    </form>
+    <div class="dash-grid section-gap">
+      <% for (const [key,heading,list,metric] of [['inversion',`Más ${coinName} invertidos`,lists.byCoins,'monedas'],['conversacion','Más comentadas',lists.byComments,'comentarios']]) { %>
+        <section class="card" aria-labelledby="r-<%= key %>">
+          <h2 id="r-<%= key %>"><%= heading %></h2>
+          <% if (!list.length) { %><p>Todavía no hay datos. ¡Sé la primera persona en participar!</p><% } else { %>
+          <ol class="rank-list">
+            <% list.forEach((r, i) => { %><li class="ter-<%= r.territorio_id %>">
+              <span class="rank-pos"><%= i + 1 %></span>
+              <div><a href="/f/<%= r.slug %>"><%= r.pregunta_gancho || r.titulo %></a><small class="muted"><%= r.programa %> · <span class="territory-dot"></span><%= r.territorio %></small></div>
+              <strong><%= r[metric] %><small><%= metric === 'monedas' ? coinName : (r.comentarios === 1 ? 'comentario' : 'comentarios') %></small></strong>
+            </li><% }) %>
+          </ol><% } %>
+        </section>
+      <% } %>
+    </div>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

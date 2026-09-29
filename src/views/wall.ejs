@@ -1,0 +1,22 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section">
+  <div class="page-heading"><div><p class="eyebrow">El conocimiento se comparte</p><h1>Explora las ideas</h1><p>Encuentra preguntas, procesos y resultados que conectan disciplinas.</p></div><a class="button secondary-button" href="/ranking">Ver ranking</a></div>
+  <form class="wall-filters form-card" method="get" action="/muro">
+    <div class="search-field"><label for="q">Busca una idea o investigador</label><input id="q" name="q" type="search" maxlength="100" value="<%= filters.q %>" placeholder="Título, pregunta, programa…"></div>
+    <% for (const [key,label,options] of [['facultad','Facultad',faculties],['programa','Programa',programs],['territorio','Territorio',territories]]) { %>
+      <div><label for="<%= key %>"><%= label %></label><select id="<%= key %>" name="<%= key %>"><option value="">Todos</option>
+        <% for (const option of options) { %><option value="<%= option.id %>" <%= String(option.id)===filters[key] ? 'selected' : '' %>><%= option.nombre %></option><% } %>
+      </select></div>
+    <% } %>
+    <div><label for="estado">Estado</label><select id="estado" name="estado"><option value="">Todos</option><option value="terminada" <%= filters.estado==='terminada' ? 'selected' : '' %>>Terminada</option><option value="en_desarrollo" <%= filters.estado==='en_desarrollo' ? 'selected' : '' %>>En desarrollo</option></select></div>
+    <div class="card-actions"><button class="button" type="submit">Buscar</button><a href="/muro">Limpiar filtros</a></div>
+  </form>
+  <p role="status"><strong><%= items.length %></strong> investigaciones encontradas</p>
+  <% if (!items.length) { %><div class="empty-state"><h2>Aún no hay ideas aquí</h2><p>Prueba otros filtros o vuelve pronto para descubrir las investigaciones que publique IMAGO.</p></div><% } %>
+  <% for (const territory of territories) { const group=items.filter(i=>String(i.territorio_id)===String(territory.id)); if (!group.length) continue; %>
+    <section class="territory-section" aria-labelledby="territorio-<%= territory.id %>"><p class="eyebrow">Territorio de conexión</p><h2 id="territorio-<%= territory.id %>"><%= territory.nombre %></h2>
+      <div class="public-grid"><% for (const item of group) { %><%- include('partials/public-card',{item}) %><% } %></div>
+    </section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>

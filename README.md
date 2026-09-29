@@ -1,0 +1,157 @@
+# POSTEA. / tu ARTículo
+
+Aplicación web del **Observatorio IMAGO** (Fundación Universitaria Compensar) para la **Semana de Innovación y Emprendimiento 2026**. Cada investigación se imprime como un post estilo Instagram con un QR. El QR abre su ficha web (`/f/:slug`), donde cualquiera lee sin registrarse, y quien se registra puede invertir monedas simbólicas o comentar.
+
+- Especificación: [POSTEA_especificacion.md](POSTEA_especificacion.md)
+- Estado por fase y cómo probar: [PROGRESO.md](PROGRESO.md)
+- Decisiones técnicas: [DECISIONES.md](DECISIONES.md)
+
+Stack: Node.js 24 LTS (compatible con 20.9+), Express 5, EJS renderizado en servidor, CSS propio, PostgreSQL (`pg`), sesiones en PostgreSQL, imágenes WebP guardadas en la base y QR generados al vuelo. Sin almacenamiento en disco ni servicios de pago.
+
+---
+
+## 1. Desarrollo local
+
+Requisitos: Node.js 20.9 o superior (se probó con 24) y PostgreSQL 16.
+
+```sh
+cp .env.example .env          # ajusta DATABASE_URL, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+npm ci
+npm run migrate               # aplica solo migraciones nuevas (tabla schema_migrations)
+npm start                     # crea el admin si no existe y abre http://localhost:3000
+```
+
+`npm run dev` recarga el servidor cuando cambia el código. `GET /health` responde `ok` si la base responde.
+
+PostgreSQL temporal con Docker:
+
+```sh
+docker run --rm --name postea-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postea -p 5432:5432 postgres:16
+```
+
+> Entorno de este equipo: Windows reservó el puerto 55432, así que la base de desarrollo corre en el contenedor `postea-dev-db-15432` (puerto **15432**, volumen `postea_dev_data`). Tras reiniciar Docker: `docker start postea-dev-db-15432`. No inicies a la vez el contenedor antiguo `postea-dev-db`, porque comparten volumen.
+
+### Datos de demostración (solo desarrollo)
+
+La semilla base solo trae las 3 facultades, los 5 territorios y el admin. **No se inventan programas ni investigaciones.** Para probar:
+
+```sh
+npm run seed:demo                        # programa y autor "DEMO" y convocatoria abierta en tu base local
+npm run demo:exhibicion                  # abre la exhibición desde hoy por 14 días (inversión y comentarios)
+npm run demo:exhibicion -- --restaurar   # vuelve a las fechas oficiales
+```
+
+Ambos scripts se niegan a correr con `NODE_ENV=production`. El autor DEMO es `autor.demo@example.com`, con la contraseña `DEMO_AUTHOR_PASSWORD` de `.env`.
+
+### Pruebas
+
+```sh
+npm test    # todas: migraciones, navegación y fases 3 a 8
+```
+
+Cada prueba crea sus datos temporales, restaura la configuración y los elimina al terminar. Entre ellas están las que pide la especificación: **inversiones simultáneas nunca dejan saldo negativo** (fase 6) y **no se puede seleccionar una cuarta investigación por programa** (fase 4). La fase 8 decodifica los QR con un lector real.
+
+---
+
+## 2. Uso por rol
+
+| Rol | Dónde | Qué hace |
+|---|---|---|
+| Visitante | `/muro`, `/f/:slug`, `/mi-cuenta` | Explora, invierte sus Imagos, comenta, reporta comentarios y ve su historial. |
+| Autor | `/panel` | Crea y edita fichas en la convocatoria, ve la vista previa del post, la ficha y la pieza imprimible, y descarga su QR. |
+| Coordinador | `/coordinacion` | Activa autores de su programa, selecciona hasta 3 fichas o las devuelve con observaciones, y prueba y verifica el QR. |
+| Admin IMAGO | **Admin IMAGO** (`/admin`) | Tablero, publicación con territorio, moderación, programas (importación CSV), territorios, usuarios, impresión, configuración y exportar. |
+
+Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` (televisor del piso 10, en pantalla completa con F11; se recarga cada 30 s).
+
+**Imprimir:** Admin IMAGO → Impresión → Pieza (o lote) → *Imprimir / Guardar como PDF*, con márgenes *Ninguno*, escala *100 %* y *Gráficos de fondo*. Sale a 50 × 70 cm. Mientras la URL no esté confirmada, todo lleva la marca **QR PROVISIONAL – NO IMPRIMIR**. Haz una prueba de impresión real (QR de 8 cm escaneado desde 1 m) antes de producir todas las piezas.
+
+---
+
+## 3. Despliegue en Render (Blueprint)
+
+El repositorio incluye [render.yaml](render.yaml): servicio web `postea-imago` y base `postea-db`, ambos **gratuitos** y en la **misma región** (Virginia). También define `buildCommand: npm ci`, `startCommand: npm run migrate && npm start`, `healthCheckPath: /health`, `NODE_VERSION=24`, `NODE_ENV=production`, `TZ=America/Bogota` y un `SESSION_SECRET` generado.
+
+### ⚠️ Antes de empezar: la base gratuita vence a los 30 días
+
+PostgreSQL Free de Render **vence 30 días después de creada** y no tiene respaldos. Según su documentación, luego queda un periodo corto para pasarla a un plan de pago antes de eliminarla; verifica las condiciones vigentes. Para cubrir de la apertura (5 oct) al cierre de la exhibición (30 oct) y dejar margen para exportar:
+
+| Si creas el Blueprint el… | La base vence el… | ¿Sirve? |
+|---|---|---|
+| 29 sep | 29 oct | ❌ Vence durante la exhibición |
+| **1 oct** | **31 oct** | ✅ Recomendado |
+| 3 oct | 2 nov | ✅ Aún da tiempo de importar programas antes del 5 oct |
+| 5 oct o después | 4 nov o después | ⚠️ La convocatoria ya abrió sin programas cargados |
+
+Si quieres ensayar antes, crea un despliegue de prueba, **elimínalo** y haz el definitivo entre el 1 y el 3 de octubre.
+
+### Pasos
+
+1. Sube este código a un repositorio de GitHub o GitLab. El `.gitignore` ya excluye `.env`, `node_modules` y los logs; **nunca subas `.env`**.
+2. En Render: **New → Blueprint**, conecta el repositorio y confirma. Render te pedirá los valores que el Blueprint no define:
+   - `BASE_URL`: `https://postea-imago.onrender.com`, sin `/` final. Si Render asigna otro nombre por estar ocupado, usa la URL que te muestre. **Define a dónde apuntan los QR.**
+   - `ADMIN_EMAIL` y `ADMIN_PASSWORD`, con al menos 12 caracteres. El admin se crea al primer arranque.
+   - `ALLOWED_EMAIL_DOMAINS`: opcional, por ejemplo `ucompensar.edu.co`. Los autores deberán usar ese dominio.
+3. Espera a que el despliegue termine y abre `https://…onrender.com/health`: debe decir `ok`.
+4. Ingresa como admin y, en este orden:
+   1. **Cambia la contraseña inicial:** en Usuarios, genera un enlace de restablecimiento para tu propia cuenta, ábrelo y define una nueva. Después puedes borrar `ADMIN_PASSWORD` en Render → Environment.
+   2. **Programas → Importar CSV** con la lista oficial (`nombre,facultad,es_especializacion`).
+   3. **Usuarios:** asigna el rol coordinador y sus programas.
+   4. **Configuración:** revisa fechas y funciones.
+   5. Cuando la URL sea la definitiva, **Configuración → URL de los QR → Confirmar** (después de imprimir, esa URL y los slugs no deben cambiar).
+5. Revisa el texto de `/privacidad`: es una versión de pruebas y requiere aprobación institucional (Ley 1581 de 2012).
+
+Verificado en un ensayo local que replica Render: Linux con Node 24, `npm ci` en producción, PostgreSQL 16 con SSL, migraciones desde cero, admin creado al arrancar, conexiones TLS 1.3, cookie `Secure` detrás de HTTPS, `sharp` y `bcrypt` en Linux, registro con retorno a la ficha, QR, pieza y exportación. El despliegue real en tu cuenta de Render sigue pendiente.
+
+### Durante la exhibición (27 al 30 de octubre)
+
+- **Evitar que el servicio se duerma:** el plan gratuito se suspende tras unos 15 minutos sin tráfico y tarda cerca de un minuto en despertar. Configura un monitor gratuito externo (UptimeRobot, cron-job.org o similar) que consulte `https://…onrender.com/health` **cada 10 minutos**, desde el 26 hasta el 30 de octubre. Un solo servicio gratuito encendido todo el mes cabe en las horas gratuitas mensuales de Render; revisa el límite vigente si tienes otros servicios gratuitos.
+- **Respaldos:** descarga **Admin IMAGO → Exportar → Descargar todo (ZIP)** al menos una vez al día y al terminar el evento.
+- **Televisor:** abre `/pantalla` en pantalla completa. Activa "Ranking público" en Configuración si quieres mostrar el ranking.
+
+---
+
+## 4. Respaldos y restauración
+
+- **Desde el panel:** Admin IMAGO → Exportar. Incluye CSV por tabla, respaldo JSON completo con imágenes y un ZIP con todo.
+- **Copia completa restaurable con `pg_dump`:** en Render → postea-db → Networking, agrega tu IP a la lista de acceso. Copia la *External Database URL* y ejecuta:
+
+```sh
+pg_dump "$DATABASE_URL" > respaldo.sql          # bash
+pg_dump $env:DATABASE_URL > respaldo.sql         # PowerShell
+psql "$NUEVA_DATABASE_URL" < respaldo.sql        # restaurar en otra base
+```
+
+Quita tu IP de la lista al terminar.
+
+---
+
+## 5. Seguridad (resumen de la revisión final)
+
+- Contraseñas con bcrypt (costo 12). El ingreso tarda lo mismo exista o no el correo.
+- Sesiones en PostgreSQL con cookie `HttpOnly`, `SameSite=Lax` y `Secure` en producción. La sesión se regenera al ingresar.
+- Token CSRF en todos los formularios POST.
+- Límites de frecuencia en ingreso, registro, inversión, comentarios, reportes y restablecimiento. Se cuentan por cuenta cuando aplica, porque muchas personas comparten la wifi del campus.
+- `helmet`: CSP sin scripts ni estilos en línea, HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy: no-referrer`. Sin `X-Powered-By`.
+- Consultas parametrizadas y validación con `zod`. Plantillas con escape automático; los únicos `<%-` son constantes o el SVG del QR generado por la librería.
+- Imágenes: máximo 5 MB, formato verificado con `sharp`, recodificadas a WebP y privadas hasta su publicación. `sharp` 0.35.5 corrige vulnerabilidades de libvips. `npm audit`: 0 vulnerabilidades.
+- Enlaces de restablecimiento de un solo uso, guardados como hash y válidos por 72 h. Usarlo cierra las sesiones abiertas.
+- CSV exportados con protección contra inyección de fórmulas. Nunca se exportan contraseñas.
+- Redirecciones `?next=` limitadas al propio sitio.
+
+---
+
+## 6. Variables de entorno
+
+Ver [.env.example](.env.example).
+
+| Variable | Uso |
+|---|---|
+| `DATABASE_URL` | Conexión PostgreSQL. En Render la enlaza el Blueprint (conexión interna). SSL automático en producción. |
+| `SESSION_SECRET` | Mínimo 32 caracteres. El Blueprint lo genera. |
+| `BASE_URL` | URL pública sin `/` final. Define los QR. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crean el admin inicial si no existe (contraseña de 12 caracteres o más). Nunca cambian una cuenta existente. |
+| `ALLOWED_EMAIL_DOMAINS` | Opcional. Dominios permitidos para autores, separados por comas. |
+| `VISITOR_DOMAIN_RESTRICTED` | `true` aplica esos dominios también a visitantes. |
+| `NODE_ENV`, `TZ`, `PORT` | `production`, `America/Bogota`; Render define `PORT`. |
+| `DEMO_AUTHOR_PASSWORD` | Solo desarrollo, para `npm run seed:demo`. |

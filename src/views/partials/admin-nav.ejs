@@ -1,0 +1,6 @@
+<nav class="admin-nav" aria-label="Administración IMAGO">
+  <% for (const [href,label] of [['/admin','Tablero'],['/admin/investigaciones','Publicación'],['/admin/moderacion','Moderación'],['/admin/programas','Programas'],['/admin/territorios','Territorios'],['/admin/usuarios','Usuarios'],['/admin/impresion','Impresión'],['/admin/configuracion','Configuración'],['/admin/exportar','Exportar']]) { %>
+    <a href="<%= href %>" <%- current === href ? 'aria-current="page"' : '' %>><%= label %></a>
+  <% } %>
+</nav>
+<% if (typeof flash !== 'undefined' && flash) { %><p class="<%= flash.tipo === 'ok' ? 'success-note' : 'form-alert' %>" role="<%= flash.tipo === 'ok' ? 'status' : 'alert' %>"><%= flash.texto %></p><% } %>

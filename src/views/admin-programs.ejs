@@ -1,0 +1,55 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section admin-page">
+  <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Programas</h1><p>Los programas académicos que pueden postear, su facultad y su cupo de investigaciones.</p></div></div>
+  <%- include('partials/admin-nav',{current:'/admin/programas'}) %>
+
+  <div class="dash-grid">
+    <section class="card" aria-labelledby="importar">
+      <h2 id="importar">Importar desde CSV</h2>
+      <p>Columnas: <code>nombre,facultad,es_especializacion</code>. La facultad se reconoce por su nombre y <code>es_especializacion</code> admite sí o no. Si el programa ya existe, se actualiza. Si una línea tiene errores, no se importa nada.</p>
+      <form class="form-card flat" method="post" action="/admin/programas-importar">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="csv-archivo">Archivo CSV <span class="optional">(o pega el contenido abajo)</span></label>
+        <input id="csv-archivo" type="file" accept=".csv,text/csv" data-csv-target="csv">
+        <label for="csv">Contenido</label>
+        <textarea id="csv" name="csv" rows="7" placeholder="nombre,facultad,es_especializacion&#10;Ingeniería de Software,Facultad de Ingeniería,no"></textarea>
+        <button class="button form-submit" type="submit">Importar programas</button>
+      </form>
+    </section>
+    <section class="card" aria-labelledby="nuevo">
+      <h2 id="nuevo">Nuevo programa</h2>
+      <form class="form-card flat" method="post" action="/admin/programas">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="nombre-nuevo">Nombre</label><input id="nombre-nuevo" name="nombre" required minlength="3" maxlength="160">
+        <label for="facultad-nuevo">Facultad</label>
+        <select id="facultad-nuevo" name="facultad_id" required><% for (const f of faculties) { %><option value="<%= f.id %>"><%= f.nombre %></option><% } %></select>
+        <label for="cupo-nuevo">Cupo de investigaciones</label><input id="cupo-nuevo" name="cupo" type="number" min="1" max="20" value="3" required>
+        <label class="check-row"><input type="checkbox" name="es_especializacion"><span>Es una especialización</span></label>
+        <button class="button form-submit" type="submit">Crear programa</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="section-gap" aria-labelledby="listado">
+    <h2 id="listado">Programas registrados (<%= programs.length %>)</h2>
+    <% if (!programs.length) { %><p>Aún no hay programas. Impórtalos con el CSV oficial de la universidad.</p><% } %>
+    <% for (const p of programs) { %>
+      <details class="review-card admin-item">
+        <summary><strong><%= p.nombre %></strong> <span class="muted">· <%= p.facultad %> · <%= p.ocupados %> de <%= p.cupo %> cupos<%= p.es_especializacion ? ' · especialización' : '' %></span><% if (!p.activo) { %> <span class="status-pill">Inactivo</span><% } %></summary>
+        <form class="form-card flat" method="post" action="/admin/programas/<%= p.id %>">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <label for="nombre-<%= p.id %>">Nombre</label><input id="nombre-<%= p.id %>" name="nombre" value="<%= p.nombre %>" required minlength="3" maxlength="160">
+          <label for="facultad-<%= p.id %>">Facultad</label>
+          <select id="facultad-<%= p.id %>" name="facultad_id"><% for (const f of faculties) { %><option value="<%= f.id %>" <%= String(f.id) === String(p.facultad_id) ? 'selected' : '' %>><%= f.nombre %></option><% } %></select>
+          <label for="cupo-<%= p.id %>">Cupo</label><input id="cupo-<%= p.id %>" name="cupo" type="number" min="<%= Math.max(1, p.ocupados) %>" max="20" value="<%= p.cupo %>">
+          <label class="check-row"><input type="checkbox" name="es_especializacion" <%= p.es_especializacion ? 'checked' : '' %>><span>Es una especialización</span></label>
+          <label class="check-row"><input type="checkbox" name="activo" <%= p.activo ? 'checked' : '' %>><span>Activo (aparece en el registro de autores)</span></label>
+          <p class="muted"><%= p.fichas %> fichas en total.</p>
+          <button class="button" type="submit">Guardar cambios</button>
+        </form>
+      </details>
+    <% } %>
+  </section>
+</main>
+<script src="/js/form.js?v=20260929-3" defer></script>
+<%- include('partials/footer') %>

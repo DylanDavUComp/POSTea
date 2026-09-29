@@ -1,0 +1,109 @@
+<%- include('partials/head',{title}) %>
+<main id="contenido" class="container section public-fiche">
+  <a class="back-link" href="/muro">← Explorar investigaciones</a>
+  <article class="fiche-preview fac-<%= item.facultad_id %> ter-<%= item.territorio_id %>">
+    <div class="fiche-tags"><p class="eyebrow">Investigación</p><span class="territory-tag"><%= item.territorio %></span></div>
+    <h1><%= item.titulo %></h1>
+    <% if (item.subtitulo) { %><p class="subtitle"><%= item.subtitulo %></p><% } %>
+    <p class="fiche-faculty"><strong><%= item.facultad %></strong> · <%= item.programa %></p>
+    <span class="status-pill"><%= item.estado_investigacion === 'terminada' ? 'Terminada' : 'En desarrollo' %></span>
+    <figure><img class="public-hero-image" src="/media/investigaciones/<%= item.id %>" alt="Imagen de la investigación: <%= item.titulo %>" decoding="async" fetchpriority="high">
+      <% if (item.imagen_credito) { %><figcaption><%= item.imagen_credito %></figcaption><% } %>
+    </figure>
+    <p><strong>Investigadores:</strong> <%= researchers.map(r=>r.nombre_completo).join(' · ') %></p>
+    <% for (const [number,label,key] of [['01','Descripción','descripcion'],['02','Objetivo','objetivo'],['03','Metodología','metodologia'],['04','Resultados','resultados']]) { %>
+      <section class="fiche-section"><span><%= number %></span><h2><%= label %></h2><p><%= item[key] %></p></section>
+    <% } %>
+    <% if (item.sharepoint_url) { %><p><a class="back-link" href="<%= item.sharepoint_url %>" target="_blank" rel="noopener noreferrer">Ver ficha en PDF (SharePoint)</a></p><% } %>
+  </article>
+  <% const when = d => d.toLocaleString('es-CO',{timeZone:'America/Bogota',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+     const flashFor = block => flash && flash.bloque === block ? flash : null;
+     const signup = block => `/registro?next=${encodeURIComponent(nextUrl + '#' + block)}`;
+     const signin = block => `/ingresar?next=${encodeURIComponent(nextUrl + '#' + block)}`; %>
+  <div class="participation-blocks">
+    <section class="card participation-card" id="invierte" aria-labelledby="invierte-titulo">
+      <h2 id="invierte-titulo">Invierte en esta idea</h2><p>Participa en la subasta simbólica del conocimiento.</p>
+      <% const fi = flashFor('invierte'); if (fi) { %><p class="<%= fi.tipo === 'ok' ? 'success-note' : 'form-alert' %>" role="<%= fi.tipo === 'ok' ? 'status' : 'alert' %>"><%= fi.texto %></p><% } %>
+      <% if (showTotals) { %><p class="invest-total"><strong><%= panel.totals.monedas %></strong> <%= panel.coinName %> invertidos<% if (panel.totals.personas) { %> por <%= panel.totals.personas %> persona<%= panel.totals.personas === 1 ? '' : 's' %><% } %></p><% } %>
+      <% if (!invest.open) { %>
+        <p class="status-note"><%= invest.message %></p>
+      <% } else if (user && panel.isAuthor) { %>
+        <p class="status-note">Esta es tu investigación: no puedes invertir en ella, pero puedes invitar a otras personas a hacerlo.</p>
+      <% } else if (user && panel.wallet < 1) { %>
+        <p class="status-note">Ya invertiste todas tus <%= panel.coinName %>. ¡Gracias por apoyar las ideas!</p>
+      <% } else { %>
+        <% const max = user ? panel.wallet : null;
+           const amounts = panel.quickAmounts.filter(n => max === null || n < max);
+           if (max !== null) amounts.push(max);
+           const preset = confirmCoins && (max === null || confirmCoins <= max) ? confirmCoins : null; %>
+        <form class="participation-form" method="<%= user ? 'post' : 'get' %>" action="/f/<%= item.slug %>/<%= user ? 'invertir' : 'participar' %>" data-once>
+          <% if (user) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="operacion" value="<%= panel.operation %>">
+            <p class="wallet">Tienes <strong><%= panel.wallet %> <%= panel.coinName %></strong> para repartir entre las ideas que más te inspiren.</p>
+          <% } else { %><input type="hidden" name="accion" value="invertir">
+            <p class="wallet">Al crear tu cuenta recibes <strong><%= panel.initialCoins %> <%= panel.coinName %></strong> para repartir.</p><% } %>
+          <% if (preset) { %><p class="status-note" role="status">Confirma tu inversión de <strong><%= preset %> <%= panel.coinName %></strong>.</p><% } %>
+          <fieldset class="chips"><legend>¿Cuántas <%= panel.coinName %> quieres invertir?</legend>
+            <% amounts.forEach((n, index) => { const checked = preset ? n === preset : index === 0; %>
+              <label class="chip"><input type="radio" name="monedas" value="<%= n %>" <%= checked ? 'checked' : '' %>><span><%= max !== null && n === max && !panel.quickAmounts.includes(n) ? `Todo (${n})` : n %></span></label>
+            <% }) %>
+          </fieldset>
+          <label class="other-amount" for="monedas_otra">Otra cantidad <span class="optional">(opcional)</span></label>
+          <input id="monedas_otra" name="monedas_otra" type="number" inputmode="numeric" min="1" <%- max !== null ? `max="${max}"` : '' %> step="1" value="<%= preset && !amounts.includes(preset) ? preset : '' %>">
+          <button class="button form-submit" type="submit"><%= user ? 'Invertir en esta idea' : 'Crear cuenta e invertir' %></button>
+        </form>
+      <% } %>
+      <% if (!user) { %><div class="participation-actions">
+        <% if (!invest.open) { %><a class="button" href="<%= signup('invierte') %>">Crear mi cuenta</a><% } %>
+        <a class="text-link-dark" href="<%= signin('invierte') %>">Ya tengo cuenta</a>
+      </div><% } %>
+    </section>
+    <section class="card participation-card" id="comenta" aria-labelledby="comenta-titulo">
+      <h2 id="comenta-titulo">Deja tu comentario</h2><p>Comparte una pregunta, una conexión o una posible aplicación.</p>
+      <% const fc = flashFor('comenta'); if (fc) { %><p class="<%= fc.tipo === 'ok' ? 'success-note' : 'form-alert' %>" role="<%= fc.tipo === 'ok' ? 'status' : 'alert' %>" <%- fc.tipo === 'ok' ? 'data-draft-sent' : '' %>><%= fc.texto %></p><% } %>
+      <% if (!comment.open) { %>
+        <p class="status-note"><%= comment.message %></p>
+      <% } else { const draft = fc && fc.borrador ? fc.borrador : {}; const chosen = draft.tipo || presetType || 'pregunta'; %>
+        <form class="participation-form" method="<%= user ? 'post' : 'get' %>" action="/f/<%= item.slug %>/<%= user ? 'comentar' : 'participar' %>" data-once>
+          <% if (user) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="operacion" value="<%= panel.operation %>"><% } else { %><input type="hidden" name="accion" value="comentar"><% } %>
+          <fieldset class="chips"><legend>¿Qué quieres compartir?</legend>
+            <% for (const [value,label] of Object.entries(panel.commentTypes)) { %>
+              <label class="chip"><input type="radio" name="tipo" value="<%= value %>" <%= chosen === value ? 'checked' : '' %>><span><%= label %></span></label>
+            <% } %>
+          </fieldset>
+          <label for="texto">Tu comentario</label>
+          <%# Sin cuenta el texto no viaja en la URL: se guarda en este navegador y se recupera al volver del registro. %>
+          <textarea id="texto" <%- user ? 'name="texto"' : '' %> rows="4" maxlength="500" data-counter data-draft-key="postea-borrador-<%= item.slug %>" placeholder="Escribe con respeto: aquí conversan personas de todas las disciplinas."><%= draft.texto || '' %></textarea>
+          <output for="texto" class="field-help"></output>
+          <button class="button form-submit" type="submit"><%= user ? 'Publicar comentario' : 'Crear cuenta y comentar' %></button>
+        </form>
+      <% } %>
+      <% if (!user) { %><div class="participation-actions">
+        <% if (!comment.open) { %><a class="button" href="<%= signup('comenta') %>">Crear mi cuenta</a><% } %>
+        <a class="text-link-dark" href="<%= signin('comenta') %>">Ya tengo cuenta</a>
+      </div><% } %>
+    </section>
+  </div>
+  <section class="comments" id="comentarios" aria-labelledby="comentarios-titulo">
+    <h2 id="comentarios-titulo">Conversación <span class="muted">(<%= panel.comments.filter(c => c.estado === 'visible').length %>)</span></h2>
+    <% const fr = flashFor('comentarios'); if (fr) { %><p class="<%= fr.tipo === 'ok' ? 'success-note' : 'form-alert' %>" role="status"><%= fr.texto %></p><% } %>
+    <% if (!panel.comments.length) { %><p>Aún no hay comentarios. ¡Sé la primera persona en conectar con esta idea!</p><% } %>
+    <% for (const c of panel.comments) { %>
+      <article class="comment" id="comentario-<%= c.id %>">
+        <p class="comment-meta"><span class="status-pill"><%= panel.commentTypes[c.tipo] %></span> <strong><%= c.autor %></strong> · <time datetime="<%= c.created_at.toISOString() %>"><%= when(c.created_at) %></time></p>
+        <p class="comment-text"><%= c.texto %></p>
+        <% if (c.mio && c.estado === 'pendiente') { %><p class="muted">Solo tú lo ves: se publicará cuando IMAGO lo revise.</p><% } %>
+        <% if (c.mio && c.estado === 'reportado') { %><p class="muted">Solo tú lo ves: IMAGO está revisando este comentario.</p><% } %>
+        <% if (user && !c.mio && c.estado === 'visible') { %>
+          <% if (c.reportado_por_mi) { %><p class="muted">Ya reportaste este comentario.</p>
+          <% } else { %><form method="post" action="/comentarios/<%= c.id %>/reportar" data-confirm="¿Reportar este comentario a IMAGO?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="text-button" type="submit">Reportar</button></form><% } %>
+        <% } %>
+      </article>
+    <% } %>
+  </section>
+  <section class="territory-section" aria-labelledby="conecta"><p class="eyebrow">Otras miradas del mismo territorio</p><h2 id="conecta">Conecta</h2>
+    <% if (related.length) { %><div class="public-grid"><% for (const item of related) { %><%- include('partials/public-card',{item}) %><% } %></div>
+    <% } else { %><p>Pronto encontrarás más investigaciones relacionadas. Mientras tanto, <a href="/muro">explora el muro</a>.</p><% } %>
+  </section>
+</main>
+<script src="/js/form.js?v=20260929-2" defer></script>
+<%- include('partials/footer') %>
