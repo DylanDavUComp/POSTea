@@ -12,24 +12,35 @@ Stack: Node.js 24 LTS (compatible con 20.9+), Express 5, EJS renderizado en serv
 
 ## 1. Desarrollo local
 
-Requisitos: Node.js 20.9 o superior (se probó con 24) y PostgreSQL 16.
+Requisitos: Node.js 20.9 o superior (se probó con 24) y Docker Desktop (o Docker Engine con Compose v2).
 
-```sh
-cp .env.example .env          # ajusta DATABASE_URL, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
-npm ci
+El PostgreSQL de desarrollo es propio del proyecto: lo levanta [compose.yml](compose.yml) (PostgreSQL 16, base/usuario/contraseña `postea`) en el puerto **15432** del equipo, para no chocar con otros proyectos que usan 5432. Los datos persisten en un volumen de Docker.
+
+En un PC nuevo (PowerShell):
+
+```powershell
+git clone <repo>
+cd POSTea
+npm install
+Copy-Item .env.example .env   # ajusta SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD; DATABASE_URL ya apunta a 127.0.0.1:15432
+npm run db:up                 # levanta PostgreSQL y espera a que esté healthy
 npm run migrate               # aplica solo migraciones nuevas (tabla schema_migrations)
-npm start                     # crea el admin si no existe y abre http://localhost:3000
+npm run dev                   # recarga al cambiar el código; crea el admin si no existe. http://localhost:3000
 ```
 
-`npm run dev` recarga el servidor cuando cambia el código. `GET /health` responde `ok` si la base responde.
+En bash usa `cp .env.example .env`. `npm start` arranca sin recarga. `GET /health` responde `ok` si la base responde.
 
-PostgreSQL temporal con Docker:
+Base local:
 
 ```sh
-docker run --rm --name postea-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postea -p 5432:5432 postgres:16
+npm run db:ps      # estado del contenedor (debe decir "healthy")
+npm run db:logs    # logs de PostgreSQL (Ctrl+C para salir)
+npm run db:down    # apaga PostgreSQL; los datos se conservan en el volumen
 ```
 
-> Entorno de este equipo: Windows reservó el puerto 55432, así que la base de desarrollo corre en el contenedor `postea-dev-db-15432` (puerto **15432**, volumen `postea_dev_data`). Tras reiniciar Docker: `docker start postea-dev-db-15432`. No inicies a la vez el contenedor antiguo `postea-dev-db`, porque comparten volumen.
+Para borrar **todos los datos locales** y empezar de cero: `docker compose down -v`, luego `npm run db:up` y `npm run migrate`. No afecta a Render.
+
+En producción la app no asume host ni puerto: usa solo la `DATABASE_URL` que entrega Render, con SSL cuando `NODE_ENV=production`.
 
 ### Datos de demostración (solo desarrollo)
 

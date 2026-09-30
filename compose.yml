@@ -1,0 +1,22 @@
+# PostgreSQL local solo para desarrollo (producción usa la DATABASE_URL que entrega Render).
+# Puerto host 15432 para no chocar con otros proyectos que usan 5432.
+services:
+  db:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: postea
+      POSTGRES_USER: postea
+      POSTGRES_PASSWORD: postea
+    ports:
+      - "15432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postea -d postea"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:

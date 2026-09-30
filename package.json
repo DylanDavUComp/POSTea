@@ -8,6 +8,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:ps": "docker compose ps",
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "seed:demo": "node scripts/seed-demo.js",

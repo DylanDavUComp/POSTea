@@ -23,12 +23,25 @@ async function migrate() {
     await client.query('COMMIT');
     console.log('Migraciones al día.');
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
     client.release();
-    await pool.end();
   }
 }
 
-migrate().catch((error) => { console.error(error); process.exitCode = 1; });
+// Destino sin contraseña, para distinguir un fallo de conexión de un error del esquema.
+function target() {
+  try {
+    const url = new URL(process.env.DATABASE_URL);
+    return `${url.hostname}:${url.port || 5432}${url.pathname}`;
+  } catch { return 'DATABASE_URL inválida'; }
+}
+
+migrate()
+  .catch((error) => {
+    console.error(`Error al migrar (${target()}): ${error.message || error.code || error}`);
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => pool.end());
