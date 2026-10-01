@@ -16,10 +16,13 @@
         <article class="research-list-card">
           <div><span class="status-pill"><%= item.estado_flujo %></span><h2><%= item.titulo %></h2><p class="muted">Enlace: <%= item.slug %></p>
             <% if (item.observaciones_revision) { %><p class="status-note">Observaciones: <%= item.observaciones_revision %></p><% } %>
+            <% if (item.estado_flujo === 'publicada' && item.edicion_autorizada_at) { %><p class="status-note">
+              <strong>Edición autorizada por IMAGO.</strong>
+              <%= ({ enviada: 'Tus cambios están en revisión; la ficha pública sigue igual.', devuelta: `IMAGO devolvió tus cambios: ${item.cambios_observaciones || ''}`, borrador: 'Tienes cambios guardados sin enviar.' })[item.cambios_estado] || 'Puedes editar la ficha y enviar los cambios para que IMAGO los apruebe.' %></p><% } %>
           </div>
           <div class="card-actions"><a href="/panel/investigaciones/<%= item.id %>/vista-previa">Vista previa</a>
             <% if (item.estado_flujo === 'publicada') { %><a href="/f/<%= item.slug %>">Ver ficha pública</a><% } %>
-            <% if (user.rol === 'admin' || ['borrador','devuelta'].includes(item.estado_flujo)) { %><a href="/panel/investigaciones/<%= item.id %>/editar">Editar</a><% } %>
+            <% if (user.rol === 'admin' || ['borrador','devuelta'].includes(item.estado_flujo) || (item.estado_flujo === 'publicada' && item.edicion_autorizada_at)) { %><a href="/panel/investigaciones/<%= item.id %>/editar">Editar</a><% } %>
           </div>
         </article>
       <% }) %>

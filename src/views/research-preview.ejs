@@ -2,10 +2,16 @@
 <main id="contenido" class="container section preview-page">
   <a class="back-link" href="<%= typeof backUrl !== 'undefined' ? backUrl : '/panel' %>">← Volver al panel</a>
   <% if (resultado === 'guardada') { %><div class="success-note" role="status">La ficha quedó guardada. Puedes seguir editándola desde tu panel.</div><% } %>
+  <% if (resultado === 'cambios-guardados') { %><div class="success-note" role="status">Tus cambios quedaron guardados sin enviar. La ficha pública sigue igual.</div><% } %>
+  <% if (resultado === 'cambios-enviados') { %><div class="success-note" role="status">Tus cambios fueron enviados a IMAGO. La ficha pública sigue igual hasta que los aprueben.</div><% } %>
+  <% if (research.estado_flujo === 'publicada' && research.edicion_autorizada_at && String(research.autor_id) === String(user.id)) { %>
+    <p class="status-note">IMAGO autorizó editar esta ficha publicada. <% if (research.cambios_estado === 'enviada') { %>Tus cambios están en revisión.<% } else if (research.cambios_estado === 'devuelta') { %>IMAGO te devolvió los cambios con observaciones: <%= research.cambios_observaciones %><% } %> <a href="/panel/investigaciones/<%= research.id %>/editar">Editar ficha</a></p>
+  <% } %>
   <% if (resultado === 'enviada') { %><div class="success-note" role="status">La ficha fue enviada para revisión. Puedes consultar su estado desde tu panel.</div><% } %>
   <p class="eyebrow">Vista previa · <%= research.estado_flujo %></p>
   <h1><%= research.titulo %></h1>
   <% if (research.estado_flujo === 'publicada') { %><p><a class="button" href="/f/<%= research.slug %>">Ver ficha pública</a></p><% } %>
+  <% if (typeof changed !== 'undefined') { %><p class="status-note"><strong>Cambios propuestos por el autor:</strong> <%= changed.length ? changed.join(', ') : 'ninguno respecto a la versión publicada' %>. Esta vista muestra cómo quedará la ficha al aprobarlos; apruébalos o devuélvelos desde Publicación.</p><% } %>
   <p class="preview-warning">Imagen de referencia. Diseño sujeto a ajustes. Haz una prueba de impresión antes de producir piezas.</p>
   <div class="preview-actions"><% if (canEdit) { %><a class="button" href="/panel/investigaciones/<%= research.id %>/editar">Editar ficha</a><% } %>
     <% if (canEdit && ['borrador','devuelta'].includes(research.estado_flujo) && String(research.autor_id) === String(user.id)) { %>
@@ -21,7 +27,7 @@
   <div class="preview-grid">
     <section class="post-preview" aria-labelledby="post-title">
       <div class="post-top"><span class="post-avatar" aria-hidden="true"><%- include('partials/ucompensar-mark') %></span><div><strong>UCompensar</strong><small><%= research.facultad_nombre %></small></div><span aria-hidden="true">•••</span></div>
-      <% if (research.imagen) { %><img class="post-image" src="/media/investigaciones/<%= research.id %>" alt="Imagen de <%= research.titulo %>"><% } else { %><div class="image-placeholder">Imagen pendiente</div><% } %>
+      <% if (research.imagen) { %><img class="post-image" src="<%= typeof imageSrc !== 'undefined' && imageSrc ? imageSrc : `/media/investigaciones/${research.id}` %>" alt="Imagen de <%= research.titulo %>"><% } else { %><div class="image-placeholder">Imagen pendiente</div><% } %>
       <div class="post-body"><p class="eyebrow">Investigación</p><h2 id="post-title"><%= research.pregunta_gancho || research.titulo %></h2>
         <p><%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Investigadores pendientes' %></p>
         <div class="post-icons" aria-hidden="true">♡　▢　➤　　▣</div>

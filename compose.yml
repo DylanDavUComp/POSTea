@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: postea
       POSTGRES_PASSWORD: postea
     ports:
-      - "15432:5432"
+      # Solo este equipo: sin 127.0.0.1 el puerto queda abierto a la red (p. ej. la wifi del campus) con la contraseña "postea".
+      - "127.0.0.1:15432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:

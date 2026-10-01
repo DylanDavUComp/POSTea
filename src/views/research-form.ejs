@@ -5,6 +5,14 @@
   <h1><%= research ? 'Editar ficha' : 'Nueva ficha' %></h1>
   <p>Los campos marcados como obligatorios para enviar pueden quedar incompletos mientras guardas el borrador.</p>
   <% if (research) { %><p class="slug-note"><strong>Enlace:</strong> <%= research.slug %> · <strong>Estado:</strong> <%= research.estado_flujo %></p><% } %>
+  <% if (editingPublished) { %>
+    <div class="status-note edit-authorized" role="note">
+      <strong>Edición autorizada por IMAGO.</strong> La ficha publicada y su QR siguen visibles sin cambios mientras editas.
+      Cuando envíes los cambios, IMAGO los revisará y, al aprobarlos, reemplazarán la versión pública. El enlace no cambia.
+      <% if (research.cambios_estado === 'devuelta' && research.cambios_observaciones) { %><br><strong>Observaciones de IMAGO:</strong> <%= research.cambios_observaciones %><% } %>
+      <% if (research.cambios_estado === 'enviada') { %><br>Ya enviaste cambios y están en revisión. Si los modificas y vuelves a enviar, IMAGO revisará la versión nueva.<% } %>
+    </div>
+  <% } %>
   <% if (error) { %><div class="form-alert" role="alert" data-form-error tabindex="-1"><strong>No se pudo guardar o enviar:</strong> <%= error %></div><% } %>
   <form class="editor-form" method="post" enctype="multipart/form-data" novalidate action="<%= research ? '/panel/investigaciones/' + research.id + '/editar' : '/panel/investigaciones/nueva' %>">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
@@ -38,7 +46,7 @@
       <textarea id="investigadores" name="investigadores" rows="5" aria-describedby="investigadores-help"><%= values.investigadores || '' %></textarea>
       <p class="field-help" id="investigadores-help">Escribe entre 1 y 6 nombres completos, uno por línea.</p>
       <label for="imagen">Imagen principal <span class="required">*</span></label>
-      <% if (research && research.imagen) { %><img class="editor-image" src="/media/investigaciones/<%= research.id %>" alt="Imagen actual de la investigación"><p class="field-help">Si eliges otra imagen, reemplazará la actual.</p><% } %>
+      <% if (research && research.imagen) { %><img class="editor-image" src="<%= imageSrc %>" alt="Imagen actual de la investigación"><p class="field-help">Si eliges otra imagen, reemplazará la actual.</p><% } %>
       <input id="imagen" type="file" name="imagen" accept="image/jpeg,image/png,image/webp" aria-describedby="imagen-help">
       <p class="field-help" id="imagen-help">JPG, PNG o WebP · máximo 5 MB. Se convierte a WebP antes de guardar.</p>
       <label for="imagen_credito">Crédito de imagen <span class="optional">(opcional)</span></label>
@@ -52,8 +60,13 @@
     </fieldset>
     <div class="editor-actions">
       <% if (error) { %><p class="form-alert action-error"><%= error %></p><% } %>
+      <% if (editingPublished) { %>
+      <button class="button secondary-button" type="submit" name="intent" value="borrador">Guardar cambios sin enviar</button>
+      <button class="button" type="submit" name="intent" value="enviar">Enviar cambios a IMAGO</button>
+      <% } else { %>
       <button class="button secondary-button" type="submit" name="intent" value="borrador">Guardar borrador</button>
       <% if ((!research || ['borrador','devuelta'].includes(research.estado_flujo)) && (windowOpen || user.rol === 'admin')) { %><button class="button" type="submit" name="intent" value="enviar">Enviar ficha</button><% } else if (!windowOpen && user.rol !== 'admin') { %><p class="field-help">El envío estará disponible durante la convocatoria.</p><% } %>
+      <% } %>
     </div>
   </form>
   <script src="/js/form.js?v=20260928-2" defer></script>

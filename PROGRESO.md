@@ -307,3 +307,32 @@ Verificado:
 - Capturas en escritorio y celular de la portada, muro, ficha, ingreso, privacidad y pantalla.
 - Portada: sección «Investigaciones publicadas» con las 6 más recientes y el total, visible desde la primera publicación (no espera a que un programa o territorio complete su cupo). El muro ya mostraba todo lo publicado.
 - Botones de volver (ficha, formulario, vista previa, pieza, error, 404, privacidad y avisos de revisión) con recuadro morado y letras blancas. Los enlaces que no son de volver («Revisar ficha completa», PDF de SharePoint) conservan el estilo de enlace.
+
+## Puesta al día · 01/10 (segundo PC)
+
+- Revisados los commits `70b674f` (PostgreSQL local con Docker Compose en el puerto 15432) y `fbb46da` (identidad UCompensar, cupo de registro por programa y migración `004_cupo_programas.sql`). Sin secretos en el repositorio; `.env` nunca se subió.
+- `compose.yml`: el puerto ahora se publica solo en `127.0.0.1`. Antes quedaba abierto a la red con la contraseña `postea`.
+- README: `npm ci` en lugar de `npm install` y comando para generar `SESSION_SECRET`.
+- En este PC la base de desarrollo pasa a ser la de Compose (`postarticulo-db-1`, volumen `postarticulo_db_data`). Los contenedores anteriores `postea-dev-db-15432` y `postea-dev-db` quedan detenidos y ya no se usan.
+- Verificado en este PC: `npm run db:up`, las 4 migraciones desde cero, `npm run seed`, `npm run seed:demo` y `npm test` completo (migraciones, navegación y fases 3 a 9).
+
+## Ajuste · Aprobar = publicar y edición autorizada de fichas publicadas (01/10)
+
+Hecho:
+
+- **Aprobar y publicar en un paso:** en Admin → Publicación, el admin aprueba una ficha *enviada* o *seleccionada* eligiendo el territorio en la misma tarjeta, y queda publicada de inmediato. Ya no hace falta pasar antes por la selección en Coordinación.
+  - El cupo del programa se respeta y el admin puede devolver con observaciones desde la misma página.
+  - La coordinación sigue pudiendo seleccionar o devolver como antes.
+- Página Publicación organizada en: Por aprobar · Cambios por aprobar · Publicadas · Otras.
+- **Edición autorizada de fichas publicadas** (migración `005_edicion_publicada.sql`):
+  - El admin pulsa «Autorizar edición al autor».
+  - El autor ve el aviso en su panel, edita la ficha (validación completa, también la imagen) y la guarda o la envía a IMAGO. Los cambios se guardan como **propuesta aparte**: la ficha pública, su imagen y su QR siguen sin cambios mientras tanto. La imagen propuesta es privada (autor y admin).
+  - El admin revisa la propuesta con la lista de campos cambiados y luego elige:
+    - **Aprobar y publicar cambios:** reemplazan la versión pública. Slug, territorio, fecha, visitas e inversiones se conservan, y la autorización se cierra.
+    - **Devolver los cambios** con observaciones, que el autor ve al editar.
+  - Retirar la autorización, o archivar la ficha, descarta los cambios no aprobados.
+- Imágenes públicas con caché de 5 minutos más ETag (antes 1 día), para que una imagen aprobada se vea pronto.
+
+Verificado: `npm run test:publicacion` (los dos flujos completos, el cupo, los permisos y que el público no ve nada hasta la aprobación) y `npm test` completo.
+
+En cada PC hay que correr `npm run migrate` para aplicar la migración 005.

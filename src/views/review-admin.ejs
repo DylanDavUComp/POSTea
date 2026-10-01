@@ -2,35 +2,105 @@
 <main id="contenido" class="container section">
   <p class="eyebrow">Observatorio IMAGO</p><h1>Publicación</h1>
   <%- include('partials/admin-nav',{current:'/admin/investigaciones'}) %>
-  <p>Asigna un territorio a cada ficha seleccionada para publicarla. Al publicar, su identificador queda fijo.</p>
+  <p>Revisa cada ficha y apruébala: al aprobar queda publicada de inmediato en el muro. También puedes autorizar a un autor para editar una ficha ya publicada.</p>
   <% if (message) { %><p class="success-note" role="status"><%= message %></p><% } %>
-  <% if (!research.length) { %><p>Aún no hay fichas para revisar.</p><% } %>
-  <% for (const item of research) { %>
-    <article class="review-card">
-      <p class="eyebrow"><%= item.estado_flujo %></p><h2><%= item.titulo %></h2>
-      <p><%= item.programa %> · <%= item.autor %></p>
-      <a class="text-link-dark" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
-      <p>Identificador: <%= item.slug %></p>
-      <% if (item.estado_flujo === 'publicada') { %><p><a class="button" href="/f/<%= item.slug %>">Ver ficha pública</a></p><% } %>
-      <% if (item.estado_flujo === 'seleccionada') { %>
-        <form method="post" action="/admin/investigaciones/<%= item.id %>/publicar">
-          <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <label for="territorio-<%= item.id %>">Territorio</label>
-          <select id="territorio-<%= item.id %>" name="territorio_id" required>
-            <option value="">Selecciona un territorio</option>
-            <% for (const territory of territories) { %><option value="<%= territory.id %>"><%= territory.nombre %></option><% } %>
-          </select>
-          <button class="button" type="submit">Publicar ficha</button>
-        </form>
-      <% } %>
-      <% if (['seleccionada','publicada'].includes(item.estado_flujo)) { %>
-        <form method="post" action="/admin/investigaciones/<%= item.id %>/archivar" data-confirm="¿Archivar esta ficha? Dejará de ocupar un cupo del programa.">
-          <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <button class="text-button" type="submit">Archivar ficha</button>
-        </form>
-      <% } %>
-    </article>
-  <% } %>
+  <% const states = { borrador: 'Borrador', enviada: 'Enviada', seleccionada: 'Seleccionada por coordinación', devuelta: 'Devuelta', publicada: 'Publicada', archivada: 'Archivada' }; %>
+  <% const csrfField = `<input type="hidden" name="_csrf" value="${csrf}">`; %>
+  <nav class="moderation-summary" aria-label="Secciones">
+    <a href="#por-aprobar"><strong><%= groups.pending.length %></strong> Por aprobar</a>
+    <a href="#cambios"><strong><%= groups.changes.length %></strong> Cambios por aprobar</a>
+    <a href="#publicadas"><strong><%= groups.published.length %></strong> Publicadas</a>
+  </nav>
+
+  <section class="review-program" id="por-aprobar" aria-labelledby="t-por-aprobar">
+    <h2 id="t-por-aprobar">Por aprobar</h2>
+    <% if (!groups.pending.length) { %><p>No hay fichas esperando aprobación.</p><% } %>
+    <% for (const item of groups.pending) { const full = item.estado_flujo === 'enviada' && item.ocupados >= item.cupo; %>
+      <article class="review-card">
+        <p class="eyebrow"><%= states[item.estado_flujo] %></p><h3><%= item.titulo %></h3>
+        <p><%= item.programa %> · <%= item.autor %> · <%= item.ocupados %> de <%= item.cupo %> aprobadas en el programa</p>
+        <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
+        <% if (full) { %><p class="status-note">El programa ya completó su cupo de <%= item.cupo %>. Archiva otra ficha o amplía el cupo en Programas para aprobar esta.</p>
+        <% } else { %>
+          <form class="approve-form" method="post" action="/admin/investigaciones/<%= item.id %>/publicar">
+            <%- csrfField %>
+            <label for="territorio-<%= item.id %>">Territorio</label>
+            <select id="territorio-<%= item.id %>" name="territorio_id" required>
+              <option value="">Selecciona un territorio</option>
+              <% for (const territory of territories) { %><option value="<%= territory.id %>" <%= String(territory.id) === String(item.territorio_id) ? 'selected' : '' %>><%= territory.nombre %></option><% } %>
+            </select>
+            <button class="button" type="submit">Aprobar y publicar</button>
+          </form>
+        <% } %>
+        <details><summary>Devolver al autor para ajustes</summary>
+          <form method="post" action="/admin/investigaciones/<%= item.id %>/devolver">
+            <%- csrfField %>
+            <label for="obs-<%= item.id %>">Observaciones (10 a 1000 caracteres)</label>
+            <textarea id="obs-<%= item.id %>" name="observaciones" minlength="10" maxlength="1000" required rows="3"></textarea>
+            <button class="button secondary-button" type="submit">Devolver con observaciones</button>
+          </form>
+        </details>
+      </article>
+    <% } %>
+  </section>
+
+  <section class="review-program" id="cambios" aria-labelledby="t-cambios">
+    <h2 id="t-cambios">Cambios por aprobar</h2>
+    <p class="muted">Fichas publicadas que su autor editó con tu autorización. La versión pública sigue igual hasta que apruebes.</p>
+    <% if (!groups.changes.length) { %><p>No hay cambios esperando aprobación.</p><% } %>
+    <% for (const item of groups.changes) { %>
+      <article class="review-card">
+        <p class="eyebrow">Cambios enviados<%= item.cambios_enviados_at ? ` el ${item.cambios_enviados_at.toLocaleString('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'})}` : '' %></p>
+        <h3><%= item.titulo %></h3><p><%= item.programa %> · <%= item.autor %></p>
+        <div class="review-actions">
+          <a class="back-link" href="/admin/investigaciones/<%= item.id %>/cambios">Revisar cambios propuestos</a>
+          <a class="back-link" href="/f/<%= item.slug %>">Ver versión publicada</a>
+        </div>
+        <form method="post" action="/admin/investigaciones/<%= item.id %>/aprobar-cambios"><%- csrfField %><button class="button" type="submit">Aprobar y publicar cambios</button></form>
+        <details><summary>Devolver los cambios al autor</summary>
+          <form method="post" action="/admin/investigaciones/<%= item.id %>/devolver-cambios">
+            <%- csrfField %>
+            <label for="obs-c-<%= item.id %>">Observaciones (10 a 1000 caracteres)</label>
+            <textarea id="obs-c-<%= item.id %>" name="observaciones" minlength="10" maxlength="1000" required rows="3"></textarea>
+            <button class="button secondary-button" type="submit">Devolver cambios</button>
+          </form>
+        </details>
+      </article>
+    <% } %>
+  </section>
+
+  <section class="review-program" id="publicadas" aria-labelledby="t-publicadas">
+    <h2 id="t-publicadas">Publicadas</h2>
+    <% if (!groups.published.length) { %><p>Aún no hay fichas publicadas.</p><% } %>
+    <% for (const item of groups.published) { %>
+      <article class="review-card">
+        <p class="eyebrow">Publicada · <%= item.slug %></p><h3><%= item.titulo %></h3><p><%= item.programa %> · <%= item.autor %></p>
+        <div class="review-actions">
+          <a class="button secondary-button" href="/f/<%= item.slug %>">Ver ficha pública</a>
+          <% if (!item.edicion_autorizada_at) { %>
+            <form method="post" action="/admin/investigaciones/<%= item.id %>/autorizar-edicion" data-confirm="¿Autorizar a <%= item.autor %> para editar esta ficha? La versión pública no cambiará hasta que apruebes sus cambios.">
+              <%- csrfField %><button class="button" type="submit">Autorizar edición al autor</button></form>
+          <% } else { %>
+            <p class="status-note"><strong>Edición autorizada.</strong>
+              <%= ({ enviada: 'El autor envió cambios: revísalos arriba.', devuelta: 'Devolviste los cambios; el autor puede corregirlos.', borrador: 'El autor está editando (cambios sin enviar).' })[item.cambios_estado] || 'El autor aún no ha hecho cambios.' %></p>
+            <form method="post" action="/admin/investigaciones/<%= item.id %>/revocar-edicion" data-confirm="¿Retirar la autorización? Se descartarán los cambios que no hayas aprobado.">
+              <%- csrfField %><button class="text-button" type="submit">Retirar autorización</button></form>
+          <% } %>
+          <form method="post" action="/admin/investigaciones/<%= item.id %>/archivar" data-confirm="¿Archivar esta ficha? Saldrá del muro, su QR dejará de abrirla y liberará un cupo del programa.">
+            <%- csrfField %><button class="text-button" type="submit">Archivar</button></form>
+        </div>
+      </article>
+    <% } %>
+  </section>
+
+  <details class="review-program" id="otras">
+    <summary><strong>Otras fichas (<%= groups.other.length %>)</strong>: borradores, devueltas y archivadas</summary>
+    <% for (const item of groups.other) { %>
+      <article class="review-card"><p class="eyebrow"><%= states[item.estado_flujo] %></p><h3><%= item.titulo %></h3><p><%= item.programa %> · <%= item.autor %></p>
+        <% if (item.observaciones_revision) { %><p><strong>Observaciones:</strong> <%= item.observaciones_revision %></p><% } %>
+        <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Ver ficha</a></article>
+    <% } %>
+  </details>
 </main>
-<script src="/js/form.js?v=20260929" defer></script>
+<script src="/js/form.js?v=20261001" defer></script>
 <%- include('partials/footer') %>

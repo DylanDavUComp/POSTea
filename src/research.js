@@ -102,6 +102,20 @@ function mayEdit(user, research) {
       ['borrador', 'devuelta'].includes(research.estado_flujo));
 }
 
+// Ficha publicada que IMAGO autorizó a editar: el autor propone cambios que se guardan aparte
+// y solo reemplazan la versión pública cuando el admin los aprueba.
+function mayEditPublished(user, research) {
+  return user.rol === 'autor' && String(research.autor_id) === String(user.id) &&
+    research.estado_flujo === 'publicada' && Boolean(research.edicion_autorizada_at);
+}
+
+// Valores del formulario a partir de la propuesta guardada (o de la versión publicada si aún no hay propuesta).
+function proposalValues(research) {
+  const c = research.cambios;
+  if (!c) return { ...research };
+  return { ...research, ...c, investigadores: (c.investigadores || []).join('\n') };
+}
+
 function mayView(user, research) {
   return user.rol === 'admin' || String(research.autor_id) === String(user.id);
 }
@@ -151,9 +165,11 @@ function parseForm(body, existing, newImage) {
 }
 
 function renderForm(req, res, { research = null, values = {}, error = null, status = 200, windowOpen = false }) {
+  const editingPublished = Boolean(research && mayEditPublished(req.user, research));
   res.status(status).render('research-form', {
     title: research ? 'Editar investigación' : 'Nueva investigación', research, values,
-    csrf: csrfToken(req), error, windowOpen
+    csrf: csrfToken(req), error, windowOpen, editingPublished,
+    imageSrc: research ? `/media/investigaciones/${research.id}${editingPublished && research.cambios_imagen ? '/propuesta' : ''}` : null
   });
 }
 
@@ -176,14 +192,25 @@ router.get('/media/investigaciones/:id', async (req, res) => {
     !['borrador','archivada'].includes(item.estado_flujo) && (await pool.query(
       'SELECT 1 FROM coordinadores_programa WHERE usuario_id=$1 AND programa_id=$2', [req.user.id, item.programa_id])).rowCount > 0;
   if (!item?.imagen || (item.estado_flujo !== 'publicada' && req.user?.rol !== 'admin' && String(req.user?.id) !== String(item.autor_id) && !coordinatorAccess)) return res.sendStatus(404);
-  res.set('Cache-Control', item.estado_flujo === 'publicada' ? 'public, max-age=86400' : 'private, no-store');
+  // Caché corta con ETag: si IMAGO aprueba una imagen nueva, el público la ve en minutos y no al día siguiente.
+  res.set('Cache-Control', item.estado_flujo === 'publicada' ? 'public, max-age=300' : 'private, no-store');
   res.type('image/webp').send(item.imagen);
+});
+
+// Imagen propuesta en una edición autorizada: solo el autor y el admin, nunca en público.
+router.get('/media/investigaciones/:id/propuesta', async (req, res) => {
+  if (!/^\d+$/.test(req.params.id) || !req.user) return res.sendStatus(404);
+  const item = (await pool.query('SELECT cambios_imagen, autor_id FROM investigaciones WHERE id=$1', [req.params.id])).rows[0];
+  if (!item?.cambios_imagen || (req.user.rol !== 'admin' && String(req.user.id) !== String(item.autor_id))) return res.sendStatus(404);
+  res.set('Cache-Control', 'private, no-store');
+  res.type('image/webp').send(item.cambios_imagen);
 });
 
 router.use('/panel', requireRole('autor', 'admin'));
 
 router.get('/panel', async (req, res) => {
-  const rows = (await pool.query(`SELECT id, titulo, slug, estado_flujo, observaciones_revision, updated_at
+  const rows = (await pool.query(`SELECT id, titulo, slug, estado_flujo, observaciones_revision, updated_at,
+      edicion_autorizada_at, cambios_estado, cambios_observaciones
     FROM investigaciones WHERE autor_id = $1 ORDER BY updated_at DESC`, [req.user.id])).rows;
   const windowOpen = await submissionWindowOpen();
   const quota = req.user.programa_id ? await programQuota(pool, req.user.programa_id) : null;
@@ -239,6 +266,7 @@ router.get('/panel/investigaciones/:id/editar', async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.sendStatus(404);
   const research = await loadResearch(req.params.id);
   if (!research) return res.sendStatus(404);
+  if (mayEditPublished(req.user, research)) return renderForm(req, res, { research, values: proposalValues(research), windowOpen: await submissionWindowOpen() });
   if (!mayEdit(req.user, research)) return res.status(403).render('error', { title: 'Sin permiso', message: 'No puedes editar esta ficha.' });
   renderForm(req, res, { research, values: { ...research, derechos_imagen_confirmados: research.derechos_imagen_confirmados },
     windowOpen: await submissionWindowOpen() });
@@ -256,6 +284,21 @@ router.post('/panel/investigaciones/:id/editar', requireRole('autor', 'admin'), 
     const found = await client.query('SELECT *, (imagen IS NOT NULL) AS tiene_imagen FROM investigaciones WHERE id = $1 FOR UPDATE', [req.params.id]);
     current = found.rows[0];
     if (!current) throw new FormError('No encontramos esa ficha.', 404);
+    if (mayEditPublished(req.user, current)) {
+      // Propuesta de cambios: se valida completa (la ficha ya es pública) y no toca la versión publicada ni el enlace.
+      const data = parseForm(req.body, current, image);
+      const proposal = { titulo: data.titulo, subtitulo: data.subtitulo || null, pregunta_gancho: data.pregunta_gancho || null,
+        descripcion: data.descripcion, objetivo: data.objetivo, metodologia: data.metodologia, resultados: data.resultados,
+        estado_investigacion: data.estado_investigacion, tipo: data.tipo, imagen_credito: data.imagen_credito || null,
+        sharepoint_url: data.sharepoint_url || null, investigadores: data.researchers, derechos_imagen_confirmados: data.rights };
+      const send = data.intent === 'enviar';
+      await client.query(`UPDATE investigaciones SET cambios=$1, cambios_imagen=COALESCE($2,cambios_imagen),
+        cambios_estado=$3, cambios_enviados_at=CASE WHEN $3='enviada' THEN now() ELSE cambios_enviados_at END,
+        cambios_observaciones=CASE WHEN $3='enviada' THEN NULL ELSE cambios_observaciones END WHERE id=$4`,
+      [JSON.stringify(proposal), image, send ? 'enviada' : (current.cambios_estado === 'devuelta' ? 'devuelta' : 'borrador'), current.id]);
+      await client.query('COMMIT');
+      return res.redirect(`/panel/investigaciones/${current.id}/vista-previa?resultado=${send ? 'cambios-enviados' : 'cambios-guardados'}`);
+    }
     if (!mayEdit(req.user, current)) throw new FormError('No puedes editar esta ficha.', 403);
     const data = parseForm(req.body, current, image);
     if (data.intent === 'enviar' && !['borrador', 'devuelta'].includes(current.estado_flujo)) throw new FormError('Esta ficha ya fue enviada.');
@@ -297,8 +340,8 @@ router.get('/panel/investigaciones/:id/vista-previa', async (req, res) => {
   if (!research) return res.sendStatus(404);
   if (!mayView(req.user, research)) return res.status(403).render('error', { title: 'Sin permiso', message: 'No puedes ver esta ficha.' });
   res.render('research-preview', { title: 'Vista previa de investigación', research, csrf: csrfToken(req),
-    resultado: ['guardada', 'enviada'].includes(req.query.resultado) ? req.query.resultado : null,
-    canEdit: mayEdit(req.user, research), windowOpen: await submissionWindowOpen() });
+    resultado: ['guardada', 'enviada', 'cambios-guardados', 'cambios-enviados'].includes(req.query.resultado) ? req.query.resultado : null,
+    canEdit: mayEdit(req.user, research) || mayEditPublished(req.user, research), windowOpen: await submissionWindowOpen() });
 });
 
 router.post('/panel/investigaciones/:id/eliminar', async (req, res) => {

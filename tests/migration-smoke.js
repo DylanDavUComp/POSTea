@@ -28,7 +28,7 @@ async function main() {
     try {
       const counts = await Promise.all(['schema_migrations', 'facultades', 'territorios', 'programas', 'usuarios']
         .map(table => test.query(`SELECT count(*)::int AS n FROM ${table}`)));
-      assert.deepEqual(counts.map(result => result.rows[0].n), [4, 3, 5, 0, 0]);
+      assert.deepEqual(counts.map(result => result.rows[0].n), [5, 3, 5, 0, 0]);
       console.log('Migraciones desde base vacía e idempotencia: correctas.');
     } finally { await test.end(); }
   } finally {

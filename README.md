@@ -21,8 +21,9 @@ En un PC nuevo (PowerShell):
 ```powershell
 git clone <repo>
 cd POSTea
-npm install
-Copy-Item .env.example .env   # ajusta SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD; DATABASE_URL ya apunta a 127.0.0.1:15432
+npm ci                        # instala exactamente las versiones de package-lock.json
+Copy-Item .env.example .env   # ajusta SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD (12+ caracteres); DATABASE_URL ya apunta a 127.0.0.1:15432
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   # genera un SESSION_SECRET para pegar en .env
 npm run db:up                 # levanta PostgreSQL y espera a que esté healthy
 npm run migrate               # aplica solo migraciones nuevas (tabla schema_migrations)
 npm run dev                   # recarga al cambiar el código; crea el admin si no existe. http://localhost:3000
@@ -71,7 +72,7 @@ Cada prueba crea sus datos temporales, restaura la configuración y los elimina 
 | Visitante | `/muro`, `/f/:slug`, `/mi-cuenta` | Explora, invierte sus Imagos, comenta, reporta comentarios y ve su historial. |
 | Autor | `/panel` | Crea y edita fichas en la convocatoria, ve la vista previa del post, la ficha y la pieza imprimible, y descarga su QR. |
 | Coordinador | `/coordinacion` | Activa autores de su programa, selecciona hasta 3 fichas o las devuelve con observaciones, y prueba y verifica el QR. |
-| Admin IMAGO | **Admin IMAGO** (`/admin`) | Tablero, publicación con territorio, moderación, programas (importación CSV), territorios, usuarios, impresión, configuración y exportar. |
+| Admin IMAGO | **Admin IMAGO** (`/admin`) | Tablero, **aprobar y publicar en un paso** (con territorio), autorizar la edición de fichas publicadas y aprobar sus cambios, moderación, programas (importación CSV), territorios, usuarios, impresión, configuración y exportar. |
 
 Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` (televisor del piso 10, en pantalla completa con F11; se recarga cada 30 s).
 
