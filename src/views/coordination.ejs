@@ -29,7 +29,7 @@
       <% for (const item of items) { %>
         <article class="review-card">
           <p class="eyebrow"><%= item.estado_flujo %></p><h4><%= item.titulo %></h4><p>Autor: <%= item.autor %></p>
-          <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
+          <a class="text-link-dark" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
           <% if (item.estado_flujo === 'publicada') { %>
             <div class="qr-check">
               <p><strong>QR:</strong> <%= item.qr_verificado_at ? `verificado el ${item.qr_verificado_at.toLocaleDateString('es-CO',{timeZone:'America/Bogota'})}` : 'sin verificar' %>.

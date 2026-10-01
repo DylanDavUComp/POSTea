@@ -49,6 +49,9 @@ async function main() {
   assert.deepEqual(steps.map(m=>m.current),[false,false,true,false]);
   const home=await get('/'); assert.equal(home.status,200);
   const homeHtml=await home.text(); assert.match(homeHtml,/Cronograma/); assert.match(homeHtml,/Producción/); assert.match(homeHtml,/href="\/muro"/);
+  assert.match(homeHtml,/Investigaciones publicadas/,'la portada muestra lo ya publicado');
+  assert.ok(homeHtml.includes(`/f/${items[4].slug}`),'la publicación más reciente aparece en la portada');
+  assert.ok(!items.slice(5).some(i=>homeHtml.includes(`/f/${i.slug}`)),'la portada no muestra fichas sin publicar');
   const css=await get('/css/catalogos.css'); assert.match(css.headers.get('content-type'),/text\/css/);
   const territoryColor=(await pool.query('SELECT color_hex FROM territorios WHERE id=$1',[territories[0].id])).rows[0].color_hex;
   assert.ok((await css.text()).includes(`.ter-${territories[0].id}{--ter:${territoryColor}}`),'colores de territorio desde la base');

@@ -78,8 +78,11 @@ h1,h2,h3 { color:var(--purple); line-height:1.15; }
 .status-pill { display:inline-block; background:#EADFF7; color:var(--purple); border-radius:99px; padding:.2rem .65rem; font-size:.8rem; font-weight:700; text-transform:capitalize; }
 .muted { color:#625C68; overflow-wrap:anywhere; }
 .card-actions,.preview-actions,.editor-actions { display:flex; flex-wrap:wrap; gap:1rem; align-items:center; }
-.card-actions a,.back-link { color:var(--purple-mid); font-weight:700; }
-.back-link { display:inline-block; margin-bottom:1.5rem; }
+.card-actions a { color:var(--purple-mid); font-weight:700; }
+/* Botones de volver: recuadro morado con letras blancas. */
+.back-link { display:inline-flex; align-items:center; gap:.4rem; min-height:44px; margin-bottom:1.5rem; padding:.6rem 1.1rem; border-radius:12px;
+  background:var(--purple); color:white; font-weight:700; text-decoration:none; box-shadow:0 4px 14px rgb(42 17 80 / .18); transition:background-color .15s, transform .15s; }
+.back-link:hover { background:var(--purple-mid); transform:translateX(-2px); }
 .research-editor { max-width:900px; }
 .research-editor > p:not(.eyebrow) { max-width:720px; }
 .slug-note { background:#EADFF7; color:var(--purple); border-radius:12px; padding:.8rem 1rem; overflow-wrap:anywhere; }
@@ -365,4 +368,31 @@ body.print-doc { background:#E9E4F0; }
   .sheets { display:block; padding:0; }
   .sheet { zoom:1; margin:0; page:poster; page-break-after:always; break-after:page; }
   .sheet:last-child { page-break-after:auto; break-after:auto; }
+}
+
+/* Identidad UCompensar: logos oficiales (public/img/ucompensar) y símbolo de seis círculos en SVG. */
+.u-mark { display:block; fill:#FF7200; }
+.brand-group { display:inline-flex; align-items:center; gap:.85rem; min-width:0; }
+.brand-u { display:block; height:26px; width:auto; padding-right:.85rem; border-right:1px solid rgb(255 255 255 / .35); }
+.post-avatar { background:white; }
+.post-avatar .u-mark { width:26px; height:26px; }
+.hero-card { display:none; }
+.brand-strip { background:white; border-bottom:1px solid #E6DFF0; }
+.brand-strip-inner { display:flex; align-items:center; gap:1rem 2.5rem; flex-wrap:wrap; padding-block:1.25rem; }
+.brand-strip img { display:block; height:52px; width:auto; max-width:100%; }
+.brand-strip p { margin:0; max-width:520px; }
+.footer-inner { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1.5rem 2.5rem; }
+.footer-brand { display:flex; align-items:center; gap:1.25rem; }
+.footer-brand img { display:block; height:40px; width:auto; }
+.footer-motto { margin:0; padding-left:1.25rem; border-left:1px solid rgb(255 255 255 / .35); font-weight:900; font-size:1.05rem; line-height:.95; text-transform:uppercase; }
+.footer-legal { margin:0; max-width:560px; }
+.quota-note { margin:0 0 1rem; color:var(--purple); }
+.screen-u { display:block; height:clamp(28px,3vw,56px); width:auto; }
+.sheet-avatar { background:white; }
+.sheet-avatar .u-mark { width:2.4cm; height:2.4cm; }
+.sheet-u { display:block; height:1.8cm; width:auto; margin:.9cm auto 0; }
+@media (max-width:480px) { .brand-group { gap:.6rem; } .brand-u { height:20px; padding-right:.6rem; } }
+@media (min-width:900px) {
+  .hero-inner { display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:3rem; align-items:center; }
+  .hero-card { display:block; width:100%; height:auto; transform:rotate(3deg); filter:drop-shadow(0 18px 30px rgb(0 0 0 / .35)); }
 }

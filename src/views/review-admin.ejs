@@ -9,7 +9,7 @@
     <article class="review-card">
       <p class="eyebrow"><%= item.estado_flujo %></p><h2><%= item.titulo %></h2>
       <p><%= item.programa %> · <%= item.autor %></p>
-      <a class="back-link" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
+      <a class="text-link-dark" href="/coordinacion/investigaciones/<%= item.id %>">Revisar ficha completa</a>
       <p>Identificador: <%= item.slug %></p>
       <% if (item.estado_flujo === 'publicada') { %><p><a class="button" href="/f/<%= item.slug %>">Ver ficha pública</a></p><% } %>
       <% if (item.estado_flujo === 'seleccionada') { %>

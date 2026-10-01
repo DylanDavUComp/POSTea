@@ -23,7 +23,8 @@
         <label for="nombre-nuevo">Nombre</label><input id="nombre-nuevo" name="nombre" required minlength="3" maxlength="160">
         <label for="facultad-nuevo">Facultad</label>
         <select id="facultad-nuevo" name="facultad_id" required><% for (const f of faculties) { %><option value="<%= f.id %>"><%= f.nombre %></option><% } %></select>
-        <label for="cupo-nuevo">Cupo de investigaciones</label><input id="cupo-nuevo" name="cupo" type="number" min="1" max="20" value="3" required>
+        <label for="cupo-nuevo">Cupo de proyectos</label><input id="cupo-nuevo" name="cupo" type="number" min="1" max="100" value="3" required>
+        <p class="muted">Máximo de proyectos que el programa puede registrar. Por defecto 3; amplíalo solo cuando el programa lo solicite por los canales internos (hasta 100).</p>
         <label class="check-row"><input type="checkbox" name="es_especializacion"><span>Es una especialización</span></label>
         <button class="button form-submit" type="submit">Crear programa</button>
       </form>
@@ -35,13 +36,13 @@
     <% if (!programs.length) { %><p>Aún no hay programas. Impórtalos con el CSV oficial de la universidad.</p><% } %>
     <% for (const p of programs) { %>
       <details class="review-card admin-item">
-        <summary><strong><%= p.nombre %></strong> <span class="muted">· <%= p.facultad %> · <%= p.ocupados %> de <%= p.cupo %> cupos<%= p.es_especializacion ? ' · especialización' : '' %></span><% if (!p.activo) { %> <span class="status-pill">Inactivo</span><% } %></summary>
+        <summary><strong><%= p.nombre %></strong> <span class="muted">· <%= p.facultad %> · <%= p.registradas %> de <%= p.cupo %> registrados · <%= p.ocupados %> seleccionados<%= p.es_especializacion ? ' · especialización' : '' %></span><% if (!p.activo) { %> <span class="status-pill">Inactivo</span><% } %></summary>
         <form class="form-card flat" method="post" action="/admin/programas/<%= p.id %>">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
           <label for="nombre-<%= p.id %>">Nombre</label><input id="nombre-<%= p.id %>" name="nombre" value="<%= p.nombre %>" required minlength="3" maxlength="160">
           <label for="facultad-<%= p.id %>">Facultad</label>
           <select id="facultad-<%= p.id %>" name="facultad_id"><% for (const f of faculties) { %><option value="<%= f.id %>" <%= String(f.id) === String(p.facultad_id) ? 'selected' : '' %>><%= f.nombre %></option><% } %></select>
-          <label for="cupo-<%= p.id %>">Cupo</label><input id="cupo-<%= p.id %>" name="cupo" type="number" min="<%= Math.max(1, p.ocupados) %>" max="20" value="<%= p.cupo %>">
+          <label for="cupo-<%= p.id %>">Cupo</label><input id="cupo-<%= p.id %>" name="cupo" type="number" min="<%= Math.max(1, p.registradas) %>" max="100" value="<%= p.cupo %>">
           <label class="check-row"><input type="checkbox" name="es_especializacion" <%= p.es_especializacion ? 'checked' : '' %>><span>Es una especialización</span></label>
           <label class="check-row"><input type="checkbox" name="activo" <%= p.activo ? 'checked' : '' %>><span>Activo (aparece en el registro de autores)</span></label>
           <p class="muted"><%= p.fichas %> fichas en total.</p>

@@ -1,5 +1,5 @@
 <article class="post-preview public-card fac-<%= item.facultad_id %> ter-<%= item.territorio_id %>">
-  <div class="post-top"><span class="post-avatar" aria-hidden="true">U</span><div><strong>UCompensar</strong><small><%= item.facultad %></small></div><span aria-hidden="true">•••</span></div>
+  <div class="post-top"><span class="post-avatar" aria-hidden="true"><%- include('ucompensar-mark') %></span><div><strong>UCompensar</strong><small><%= item.facultad %></small></div><span aria-hidden="true">•••</span></div>
   <a class="post-media" href="/f/<%= item.slug %>" tabindex="-1" aria-hidden="true">
     <img class="post-image" src="/media/investigaciones/<%= item.id %>" alt="" loading="lazy" decoding="async" width="600" height="450">
     <span class="territory-tag"><%= item.territorio %></span>

@@ -6,6 +6,8 @@
   </div>
   <% if (!windowOpen && user.rol !== 'admin') { %><p class="status-note">La convocatoria para crear o enviar fichas abre el 5 de octubre. Puedes seguir editando tus borradores.</p><% } %>
   <% if (!user.programa_id) { %><p class="status-note">Tu cuenta aún no tiene un programa asignado.</p><% } %>
+  <% if (quota) { %><p class="quota-note"><strong><%= quota.registradas %> de <%= quota.cupo %></strong> proyectos registrados por tu programa.</p><% } %>
+  <% if (quotaMessage) { %><p class="status-note"><%= quotaMessage %></p><% } %>
   <% if (!rows.length) { %>
     <div class="empty-state"><h2>Aún no tienes fichas</h2><p>Cuando comience la convocatoria, podrás registrar tu primera investigación aquí.</p></div>
   <% } else { %>

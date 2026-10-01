@@ -10,9 +10,12 @@ const joins = `FROM investigaciones i JOIN programas p ON p.id=i.programa_id
   JOIN facultades f ON f.id=p.facultad_id JOIN territorios t ON t.id=i.territorio_id`;
 
 router.get('/', async (req, res) => {
-  const config = await loadConfig();
+  // Lo ya publicado se muestra de inmediato, aunque ningún programa o territorio haya completado su cupo.
+  const [config, latest, total] = await Promise.all([loadConfig(),
+    pool.query(`SELECT ${fields} ${joins} WHERE i.estado_flujo='publicada' ORDER BY i.publicada_at DESC,i.id DESC LIMIT 6`),
+    pool.query("SELECT count(*)::int AS n FROM investigaciones WHERE estado_flujo='publicada'")]);
   res.render('home', { title: 'POSTEA. / tu ARTículo', milestones: schedule(config).milestones,
-    farewell: req.query.salida === '1' && !req.user });
+    latest: latest.rows, publishedTotal: total.rows[0].n, farewell: req.query.salida === '1' && !req.user });
 });
 
 // Colores editables por el admin: la CSP no admite estilos en línea, así que se sirven como hoja propia.

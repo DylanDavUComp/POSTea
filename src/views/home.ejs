@@ -2,6 +2,7 @@
 <main id="contenido">
   <section class="hero">
     <div class="container hero-inner">
+      <div class="hero-main">
       <% if (farewell) { %><p class="success-note" role="status">Cerraste sesión. ¡Gracias por pasar por POSTEA!</p><% } %>
       <p class="eyebrow">Semana de Innovación y Emprendimiento 2026</p>
       <h1>El conocimiento se comparte, <span>las ideas se conectan.</span></h1>
@@ -12,8 +13,24 @@
         <% } else { %><a class="button" href="/registro">Crear mi cuenta</a><a class="text-link" href="/ingresar">Ya tengo cuenta</a><% } %>
       </div>
       <p class="event-date">Exhibición · <%= milestones[3].label %> de 2026</p>
+      </div>
+      <img class="hero-card" src="/img/ucompensar/hacer-para-saber-naranja.png" alt="Hacer para saber · UCompensar" width="348" height="458">
     </div>
   </section>
+  <section class="brand-strip" aria-label="Una iniciativa de UCompensar">
+    <div class="container brand-strip-inner">
+      <img src="/img/ucompensar/hacer-para-saber-lockup.png" alt="Hacer para saber · UCompensar" width="944" height="209" loading="lazy">
+      <p>Una iniciativa del <strong>Observatorio IMAGO</strong> para la Semana de Innovación y Emprendimiento 2026.</p>
+    </div>
+  </section>
+  <% if (latest.length) { %>
+  <section class="container section" aria-labelledby="recientes">
+    <div class="page-heading"><div><p class="eyebrow">Ya en la vitrina</p><h2 id="recientes">Investigaciones publicadas</h2>
+      <p><%= publishedTotal === 1 ? 'Ya hay 1 investigación publicada.' : `Ya hay ${publishedTotal} investigaciones publicadas.` %> Se suman más a medida que IMAGO revisa las de cada programa.</p></div>
+      <a class="button secondary-button" href="/muro">Ver todas en el muro</a></div>
+    <div class="public-grid"><% for (const item of latest) { %><%- include('partials/public-card', { item }) %><% } %></div>
+  </section>
+  <% } %>
   <section class="container section" aria-labelledby="como-funciona">
     <p class="eyebrow">Una vitrina para investigar juntos</p>
     <h2 id="como-funciona">Así funciona</h2>
@@ -25,7 +42,7 @@
     </div>
   </section>
   <section class="container section participation" aria-labelledby="participan">
-    <div><p class="eyebrow">Investigación en movimiento</p><h2 id="participan">¿Quiénes participan?</h2><p>Investigadores, semilleros, proyectos de grado y pasantes de UCompensar. Cada programa selecciona hasta tres investigaciones.</p></div>
+    <div><p class="eyebrow">Investigación en movimiento</p><h2 id="participan">¿Quiénes participan?</h2><p>Investigadores, semilleros, proyectos de grado y pasantes de UCompensar. Cada programa puede registrar hasta tres investigaciones.</p></div>
     <div class="date-card"><span>Convocatoria</span><strong><%= milestones[0].label %> – <%= milestones[1].label %></strong><span>Exhibición</span><strong><%= milestones[3].label %></strong></div>
   </section>
   <section class="container section" aria-labelledby="cronograma">

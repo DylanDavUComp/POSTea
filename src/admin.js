@@ -74,7 +74,7 @@ router.get('/admin', admin, async (req, res) => {
 const programSchema = z.object({
   nombre: z.string().trim().min(3, 'El nombre del programa debe tener al menos 3 caracteres.').max(160),
   facultad_id: z.string().regex(/^\d+$/, 'Elige una facultad.'),
-  cupo: z.coerce.number().int().min(1, 'El cupo debe ser de al menos 1.').max(20, 'El cupo máximo es 20.'),
+  cupo: z.coerce.number().int().min(1, 'El cupo debe ser de al menos 1.').max(100, 'El cupo máximo es 100.'),
   es_especializacion: z.boolean(), activo: z.boolean()
 });
 const programFrom = body => programSchema.safeParse({ ...body, es_especializacion: body.es_especializacion === 'on', activo: body.activo === 'on' });
@@ -83,6 +83,7 @@ router.get('/admin/programas', admin, async (req, res) => {
   const [programs, faculties] = await Promise.all([
     pool.query(`SELECT p.*,f.nombre AS facultad,
         (SELECT count(*)::int FROM investigaciones i WHERE i.programa_id=p.id AND i.estado_flujo IN ('seleccionada','publicada')) AS ocupados,
+        (SELECT count(*)::int FROM investigaciones i WHERE i.programa_id=p.id AND i.estado_flujo<>'archivada') AS registradas,
         (SELECT count(*)::int FROM investigaciones i WHERE i.programa_id=p.id) AS fichas
       FROM programas p JOIN facultades f ON f.id=p.facultad_id ORDER BY f.orden,p.nombre`),
     pool.query('SELECT id,nombre FROM facultades ORDER BY orden,nombre')
@@ -105,11 +106,11 @@ router.post('/admin/programas/:id', admin, handle('/admin/programas')(async (req
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // El mismo bloqueo que usa la selección de fichas: el cupo no puede quedar por debajo de lo ya ocupado.
+    // El mismo bloqueo que usan la creación y la selección de fichas: el cupo no puede quedar por debajo de lo ya registrado.
     const program = (await client.query('SELECT id FROM programas WHERE id=$1 FOR UPDATE', [req.params.id])).rows[0];
     if (!program) throw new AdminError('No encontramos ese programa.');
-    const used = (await client.query(`SELECT count(*)::int AS n FROM investigaciones WHERE programa_id=$1 AND estado_flujo IN ('seleccionada','publicada')`, [program.id])).rows[0].n;
-    if (parsed.data.cupo < used) throw new AdminError(`El programa ya tiene ${used} fichas seleccionadas o publicadas; el cupo no puede ser menor.`);
+    const used = (await client.query(`SELECT count(*)::int AS n FROM investigaciones WHERE programa_id=$1 AND estado_flujo<>'archivada'`, [program.id])).rows[0].n;
+    if (parsed.data.cupo < used) throw new AdminError(`El programa ya tiene ${used} proyectos registrados; el cupo no puede ser menor. Archiva alguno si necesitas reducirlo.`);
     if ((await client.query('SELECT 1 FROM programas WHERE lower(nombre)=lower($1) AND id<>$2', [parsed.data.nombre, program.id])).rowCount) throw new AdminError('Ya existe otro programa con ese nombre.');
     await client.query('UPDATE programas SET nombre=$1,facultad_id=$2,cupo=$3,es_especializacion=$4,activo=$5 WHERE id=$6',
       [parsed.data.nombre, parsed.data.facultad_id, parsed.data.cupo, parsed.data.es_especializacion, parsed.data.activo, program.id]);

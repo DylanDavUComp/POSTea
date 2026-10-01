@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/app.css?v=20260929-10">
+  <link rel="stylesheet" href="/css/app.css?v=20260930-2">
   <link rel="stylesheet" href="/css/catalogos.css">
 </head>
 <body class="print-doc">
@@ -38,7 +38,7 @@
         <% if (p.territorio) { %><span class="sheet-territory"><%= p.territorio %></span><% } %>
         <div class="sheet-post">
           <div class="sheet-head">
-            <span class="sheet-avatar">U</span>
+            <span class="sheet-avatar" aria-hidden="true"><%- include('partials/ucompensar-mark') %></span>
             <div><strong>UCompensar</strong><span><%= p.facultad %></span></div>
             <span class="sheet-more" aria-hidden="true">•••</span>
           </div>
@@ -66,6 +66,7 @@
             </div>
           </div>
         </div>
+        <img class="sheet-u" src="/img/ucompensar/ucompensar-blanco.png" alt="UCompensar" width="794" height="218">
         <p class="sheet-foot">Fundación Universitaria Compensar · Observatorio IMAGO · Semana de Innovación y Emprendimiento 2026 · Vigilada MinEducación</p>
       </article>
     <% } %>

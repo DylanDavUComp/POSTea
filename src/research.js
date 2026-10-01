@@ -82,6 +82,19 @@ async function submissionWindowOpen() {
   return Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && Date.now() >= start && Date.now() <= end;
 }
 
+// Cupo de registro: fichas no archivadas del programa. Ampliarlo es una gestión interna con IMAGO, no desde la página.
+// Con lock, bloquea la fila del programa (igual que la selección) para que dos creaciones simultáneas no pasen el cupo.
+async function programQuota(db, programId, lock = false) {
+  const program = (await db.query(`SELECT cupo FROM programas WHERE id=$1${lock ? ' FOR UPDATE' : ''}`, [programId])).rows[0];
+  const used = (await db.query(`SELECT count(*)::int AS n FROM investigaciones
+    WHERE programa_id=$1 AND estado_flujo<>'archivada'`, [programId])).rows[0].n;
+  const cupo = program?.cupo ?? 0;
+  return { cupo, registradas: used, full: used >= cupo };
+}
+
+const quotaMessage = quota => `Tu programa ya registró ${quota.registradas} de ${quota.cupo} proyectos, el máximo permitido. ` +
+  'Si necesita más cupos, la dirección del programa debe solicitarlo a IMAGO por los canales internos.';
+
 function mayEdit(user, research) {
   return user.rol === 'admin' ||
     (user.rol === 'autor' && String(research.autor_id) === String(user.id) &&
@@ -173,14 +186,17 @@ router.get('/panel', async (req, res) => {
   const rows = (await pool.query(`SELECT id, titulo, slug, estado_flujo, observaciones_revision, updated_at
     FROM investigaciones WHERE autor_id = $1 ORDER BY updated_at DESC`, [req.user.id])).rows;
   const windowOpen = await submissionWindowOpen();
-  res.render('panel', { title: 'Mis investigaciones', rows, windowOpen,
-    canCreate: Boolean(req.user.programa_id) && (req.user.rol === 'admin' || windowOpen), csrf: csrfToken(req) });
+  const quota = req.user.programa_id ? await programQuota(pool, req.user.programa_id) : null;
+  res.render('panel', { title: 'Mis investigaciones', rows, windowOpen, quota, quotaMessage: quota?.full ? quotaMessage(quota) : null,
+    canCreate: Boolean(quota) && !quota.full && (req.user.rol === 'admin' || windowOpen), csrf: csrfToken(req) });
 });
 
 router.get('/panel/investigaciones/nueva', async (req, res) => {
   const windowOpen = await submissionWindowOpen();
   if (!req.user.programa_id) return res.status(400).render('error', { title: 'Falta programa', message: 'Necesitas un programa para crear una investigación.' });
   if (req.user.rol !== 'admin' && !windowOpen) return res.status(403).render('error', { title: 'Convocatoria cerrada', message: 'La convocatoria para crear fichas aún no está abierta o ya terminó.' });
+  const quota = await programQuota(pool, req.user.programa_id);
+  if (quota.full) return res.status(409).render('error', { title: 'Cupo completo', message: quotaMessage(quota) });
   renderForm(req, res, { windowOpen });
 });
 
@@ -195,6 +211,8 @@ router.post('/panel/investigaciones/nueva', requireRole('autor', 'admin'), uploa
     const data = parseForm(req.body, null, image);
     client = await pool.connect();
     await client.query('BEGIN');
+    const quota = await programQuota(client, req.user.programa_id, true);
+    if (quota.full) throw new FormError(quotaMessage(quota), 409);
     const saved = await client.query(`INSERT INTO investigaciones
       (slug, programa_id, autor_id, titulo, subtitulo, pregunta_gancho, descripcion, objetivo, metodologia,
        resultados, estado_investigacion, tipo, imagen, imagen_mime, imagen_credito, derechos_imagen_confirmados,

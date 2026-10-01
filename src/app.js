@@ -26,6 +26,7 @@ app.use(helmet({ contentSecurityPolicy: {
 } }));
 app.use('/css', express.static(path.join(__dirname, '..', 'public', 'css'), { maxAge: '1d' }));
 app.use('/js', express.static(path.join(__dirname, '..', 'public', 'js'), { maxAge: '1d' }));
+app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img'), { maxAge: '7d' }));
 
 app.get('/health', async (_req, res) => {
   try {

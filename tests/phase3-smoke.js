@@ -12,6 +12,7 @@ const server = process.env.POSTEA_TEST_BASE_URL ? null : app.listen(0);
 const base = process.env.POSTEA_TEST_BASE_URL || `http://127.0.0.1:${server.address().port}`;
 let cookie = '';
 const created = [];
+let quotaRestore = null;
 
 async function request(path, options = {}) {
   const response = await fetch(base + path, { redirect: 'manual', ...options,
@@ -53,6 +54,13 @@ async function main() {
   assert.equal(login.status, 302, 'el autor debe ingresar');
   assert.equal(login.headers.get('location'), '/panel');
 
+  // Deja un solo cupo libre en el programa DEMO para probar el límite de registro (se restaura al final).
+  const programId = (await pool.query('SELECT programa_id FROM usuarios WHERE email=$1', [email])).rows[0].programa_id;
+  quotaRestore = { programId, cupo: (await pool.query('SELECT cupo FROM programas WHERE id=$1', [programId])).rows[0].cupo };
+  const registered = async () => (await pool.query(`SELECT count(*)::int AS n FROM investigaciones
+    WHERE programa_id=$1 AND estado_flujo<>'archivada'`, [programId])).rows[0].n;
+  await pool.query('UPDATE programas SET cupo=$1 WHERE id=$2', [await registered() + 1, programId]);
+
   const panel = await request('/panel');
   assert.equal(panel.status, 200);
   assert.match(await panel.text(), /Crear ficha/);
@@ -76,6 +84,16 @@ async function main() {
   const id = draft.headers.get('location')?.match(/\/investigaciones\/(\d+)\/vista-previa/)?.[1];
   assert.ok(id);
   created.push(id);
+
+  const fullPanel = await (await request('/panel')).text();
+  assert.doesNotMatch(fullPanel, /Crear ficha/, 'con el cupo lleno no se ofrece crear otra ficha');
+  assert.match(fullPanel, /solicitarlo a IMAGO por los canales internos/);
+  const fullPage = await request('/panel/investigaciones/nueva');
+  assert.equal(fullPage.status, 409, 'el formulario nuevo se bloquea con el cupo lleno');
+  await fullPage.text();
+  const blocked = await request('/panel/investigaciones/nueva', { method: 'POST', body: form(createToken, 'borrador', `DEMO Fuera de cupo ${Date.now()}`) });
+  assert.equal(blocked.status, 409, 'no se registra una ficha por encima del cupo');
+  assert.match(await blocked.text(), /máximo permitido/);
 
   const editToken = await token(await request(`/panel/investigaciones/${id}/editar`));
   const tooShort = form(editToken, 'enviar', title, true);
@@ -113,23 +131,27 @@ async function main() {
   assert.match(previewHtml, /Investigador DEMO/);
   assert.match(previewHtml, /La ficha fue enviada para revisión/);
 
-  const other = await request('/panel/investigaciones/nueva', { method: 'POST',
-    body: form(createToken, 'borrador', `DEMO Borrador para eliminar ${Date.now()}`) });
-  assert.equal(other.status, 302);
-  const otherId = other.headers.get('location')?.match(/\/investigaciones\/(\d+)\/vista-previa/)?.[1];
+  await pool.query('UPDATE programas SET cupo=cupo+1 WHERE id=$1', [programId]);
+  const racing = await Promise.all([1, 2, 3].map(n => request('/panel/investigaciones/nueva', { method: 'POST',
+    body: form(createToken, 'borrador', `DEMO Borrador para eliminar ${Date.now()} ${n}`) })));
+  const idOf = response => response.headers.get('location')?.match(/\/investigaciones\/(\d+)\/vista-previa/)?.[1];
+  for (const response of racing) if (response.status === 302) created.push(idOf(response));
+  assert.deepEqual(racing.map(r => r.status).sort(), [302, 409, 409], 'el cupo de registro resiste solicitudes simultáneas');
+  await Promise.all(racing.filter(r => r.status !== 302).map(r => r.text()));
+  const otherId = idOf(racing.find(r => r.status === 302));
   assert.ok(otherId);
-  created.push(otherId);
   const deleteToken = await token(await request(`/panel/investigaciones/${otherId}/vista-previa`));
   const deleted = await request(`/panel/investigaciones/${otherId}/eliminar`, { method: 'POST',
     body: new URLSearchParams({ _csrf: deleteToken }) });
   assert.equal(deleted.status, 302);
   assert.equal((await pool.query('SELECT 1 FROM investigaciones WHERE id=$1', [otherId])).rowCount, 0);
   created.pop();
-  console.log('Fase 3: borrador, validación, envío, WebP, vista previa y eliminación correctos.');
+  console.log('Fase 3: borrador, cupo de registro (también simultáneo), validación, envío, WebP, vista previa y eliminación correctos.');
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
-  for (const id of created) await pool.query('DELETE FROM investigaciones WHERE id=$1', [id]);
+  for (const id of created) if (id) await pool.query('DELETE FROM investigaciones WHERE id=$1', [id]);
+  if (quotaRestore) await pool.query('UPDATE programas SET cupo=$1 WHERE id=$2', [quotaRestore.cupo, quotaRestore.programId]);
   if (server) await new Promise(resolve => server.close(resolve));
   await pool.end();
 });

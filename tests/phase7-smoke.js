@@ -80,7 +80,7 @@ async function main() {
   }
   await adminPost(`/admin/programas/${a.id}`, { nombre: programName('A'), facultad_id: faculties[1].id, cupo: '1', activo: 'on' });
   const cupoPage = await flashOf(adminCookie, '/admin/programas');
-  assert.match(cupoPage, /ya tiene 2 fichas seleccionadas o publicadas/);
+  assert.match(cupoPage, /ya tiene 2 proyectos registrados/);
   await adminPost(`/admin/programas/${a.id}`, { nombre: programName('A'), facultad_id: faculties[1].id, cupo: '4' });
   assert.deepEqual([(await programId(programName('A'))).cupo, (await programId(programName('A'))).activo], [4, false]);
 

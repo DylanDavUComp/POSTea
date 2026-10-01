@@ -20,7 +20,7 @@
   <% if (research.estado_flujo !== 'publicada') { %><p class="status-note">El QR queda marcado como provisional hasta que IMAGO publique la ficha: antes de eso su enlace todavía puede cambiar.</p><% } %>
   <div class="preview-grid">
     <section class="post-preview" aria-labelledby="post-title">
-      <div class="post-top"><span class="post-avatar">U</span><div><strong>UCompensar</strong><small><%= research.facultad_nombre %></small></div><span aria-hidden="true">•••</span></div>
+      <div class="post-top"><span class="post-avatar" aria-hidden="true"><%- include('partials/ucompensar-mark') %></span><div><strong>UCompensar</strong><small><%= research.facultad_nombre %></small></div><span aria-hidden="true">•••</span></div>
       <% if (research.imagen) { %><img class="post-image" src="/media/investigaciones/<%= research.id %>" alt="Imagen de <%= research.titulo %>"><% } else { %><div class="image-placeholder">Imagen pendiente</div><% } %>
       <div class="post-body"><p class="eyebrow">Investigación</p><h2 id="post-title"><%= research.pregunta_gancho || research.titulo %></h2>
         <p><%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Investigadores pendientes' %></p>

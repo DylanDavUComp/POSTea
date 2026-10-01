@@ -291,3 +291,19 @@ Pendiente (acciones tuyas):
 4. Revisión institucional del aviso de privacidad (versión `2026-pruebas-01`).
 5. Monitor externo a `/health` cada 10 minutos del 26 al 30 de octubre y exportación diaria (ZIP).
 
+
+## Ajustes posteriores · Cupo de registro e identidad UCompensar (30/09)
+
+Hecho:
+
+- **Cupo de registro por programa:** cada programa puede registrar máximo 3 proyectos (fichas no archivadas). Con el cupo lleno, «Crear ficha» desaparece del panel, el formulario responde 409 y el panel explica que la ampliación se solicita a IMAGO por canales internos. El autor ve el contador «X de 3 proyectos registrados».
+- Admin → Programas: cupo de 1 a 100 (antes 20), sin poder bajarlo de lo ya registrado. Migración `004_cupo_programas.sql` con `CHECK (cupo BETWEEN 1 AND 100)`.
+- Identidad UCompensar: logo en el encabezado, pie con logo y «Hacer para saber», tarjeta naranja en la portada (escritorio), franja institucional, símbolo en los avatares de posts y de la pieza imprimible, y logo en `/pantalla` y en el pie de la pieza.
+
+Verificado:
+
+- `npm run test:phase3`: con el cupo lleno no se ofrece ni se acepta otra ficha, y tres creaciones simultáneas con un solo cupo libre dejan exactamente una.
+- `npm test` completo.
+- Capturas en escritorio y celular de la portada, muro, ficha, ingreso, privacidad y pantalla.
+- Portada: sección «Investigaciones publicadas» con las 6 más recientes y el total, visible desde la primera publicación (no espera a que un programa o territorio complete su cupo). El muro ya mostraba todo lo publicado.
+- Botones de volver (ficha, formulario, vista previa, pieza, error, 404, privacidad y avisos de revisión) con recuadro morado y letras blancas. Los enlaces que no son de volver («Revisar ficha completa», PDF de SharePoint) conservan el estilo de enlace.

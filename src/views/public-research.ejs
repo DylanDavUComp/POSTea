@@ -14,7 +14,7 @@
     <% for (const [number,label,key] of [['01','Descripción','descripcion'],['02','Objetivo','objetivo'],['03','Metodología','metodologia'],['04','Resultados','resultados']]) { %>
       <section class="fiche-section"><span><%= number %></span><h2><%= label %></h2><p><%= item[key] %></p></section>
     <% } %>
-    <% if (item.sharepoint_url) { %><p><a class="back-link" href="<%= item.sharepoint_url %>" target="_blank" rel="noopener noreferrer">Ver ficha en PDF (SharePoint)</a></p><% } %>
+    <% if (item.sharepoint_url) { %><p><a class="text-link-dark" href="<%= item.sharepoint_url %>" target="_blank" rel="noopener noreferrer">Ver ficha en PDF (SharePoint)</a></p><% } %>
   </article>
   <% const when = d => d.toLocaleString('es-CO',{timeZone:'America/Bogota',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
      const flashFor = block => flash && flash.bloque === block ? flash : null;
