@@ -34,8 +34,9 @@ async function decode(png, size) {
   const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return jsQR(new Uint8ClampedArray(data), info.width, info.height)?.data || null;
 }
-const setUrlConfirmed = value => pool.query(`INSERT INTO configuracion(clave,valor) VALUES('url_qr_confirmada',$1::jsonb)
-  ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor`, [JSON.stringify(value)]);
+// Igual que la confirmación del admin: guarda también la URL exacta confirmada (BASE_URL vigente).
+const setUrlConfirmed = value => pool.query(`INSERT INTO configuracion(clave,valor) VALUES('url_qr_confirmada',$1::jsonb),('url_qr_confirmada_para',$2::jsonb)
+  ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor`, [JSON.stringify(value), JSON.stringify(value ? (process.env.BASE_URL || '').replace(/\/+$/, '') : null)]);
 
 async function main() {
   savedConfig = (await pool.query('SELECT clave,valor FROM configuracion')).rows;

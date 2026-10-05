@@ -29,7 +29,7 @@ npm run migrate               # aplica solo migraciones nuevas (tabla schema_mig
 npm run dev                   # recarga al cambiar el código; crea el admin si no existe. http://localhost:3000
 ```
 
-En bash usa `cp .env.example .env`. `npm start` arranca sin recarga. `GET /health` responde `ok` si la base responde.
+En bash usa `cp .env.example .env`. `npm start` arranca sin recarga. `GET /health` responde `ok` mientras el proceso atienda (liveness); `GET /health/db` responde `ok` solo si la base responde.
 
 Base local:
 
@@ -41,7 +41,9 @@ npm run db:down    # apaga PostgreSQL; los datos se conservan en el volumen
 
 Para borrar **todos los datos locales** y empezar de cero: `docker compose down -v`, luego `npm run db:up` y `npm run migrate`. No afecta a Render.
 
-En producción la app no asume host ni puerto: usa solo la `DATABASE_URL` que entrega Render, con SSL cuando `NODE_ENV=production`.
+En producción la app no asume host ni puerto: escucha en `0.0.0.0:$PORT` y usa solo la `DATABASE_URL` que entrega Render, con SSL cuando `NODE_ENV=production` (o según `DB_SSL` / `?sslmode=`).
+
+Para probar la app en contenedor, como en Render: `docker compose --profile app up --build` (http://localhost:3000; usa tu `.env` y el PostgreSQL de compose).
 
 ### Datos de demostración (solo desarrollo)
 
@@ -82,7 +84,9 @@ Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` 
 
 ## 3. Despliegue en Render (Blueprint)
 
-El repositorio incluye [render.yaml](render.yaml): servicio web `postea-imago` y base `postea-db`, ambos **gratuitos** y en la **misma región** (Virginia). También define `buildCommand: npm ci`, `startCommand: npm run migrate && npm start`, `healthCheckPath: /health`, `NODE_VERSION=24`, `NODE_ENV=production`, `TZ=America/Bogota` y un `SESSION_SECRET` generado.
+El repositorio incluye [render.yaml](render.yaml): servicio web `postea-imago` (**runtime Docker**, construido desde el [Dockerfile](Dockerfile)) y base `postea-db`, ambos **gratuitos** y en la **misma región** (Virginia). El contenedor aplica las migraciones y arranca (`node scripts/migrate.js && node src/server.js`) en `0.0.0.0:$PORT`. También define `healthCheckPath: /health`, `NODE_ENV=production`, `TZ=America/Bogota` y un `SESSION_SECRET` generado.
+
+**Guía completa de variables, migración de datos (`pg_dump`/`pg_restore`), respaldos y lista de verificación: [DEPLOY_RENDER.md](DEPLOY_RENDER.md).**
 
 ### ⚠️ Antes de empezar: la base gratuita vence a los 30 días
 
@@ -104,7 +108,7 @@ Si quieres ensayar antes, crea un despliegue de prueba, **elimínalo** y haz el 
    - `BASE_URL`: `https://postea-imago.onrender.com`, sin `/` final. Si Render asigna otro nombre por estar ocupado, usa la URL que te muestre. **Define a dónde apuntan los QR.**
    - `ADMIN_EMAIL` y `ADMIN_PASSWORD`, con al menos 12 caracteres. El admin se crea al primer arranque.
    - `ALLOWED_EMAIL_DOMAINS`: opcional, por ejemplo `ucompensar.edu.co`. Los autores deberán usar ese dominio.
-3. Espera a que el despliegue termine y abre `https://…onrender.com/health`: debe decir `ok`.
+3. Espera a que el despliegue termine y abre `https://…onrender.com/health/db`: debe decir `ok`. Luego revisa en Admin → Tablero el panel "Base de datos en Render" y el diagnóstico del proxy ([DEPLOY_RENDER.md](DEPLOY_RENDER.md)).
 4. Ingresa como admin y, en este orden:
    1. **Cambia la contraseña inicial:** en Usuarios, genera un enlace de restablecimiento para tu propia cuenta, ábrelo y define una nueva. Después puedes borrar `ADMIN_PASSWORD` en Render → Environment.
    2. **Programas → Importar CSV** con la lista oficial (`nombre,facultad,es_especializacion`).
@@ -117,8 +121,8 @@ Verificado en un ensayo local que replica Render: Linux con Node 24, `npm ci` en
 
 ### Durante la exhibición (27 al 30 de octubre)
 
-- **Evitar que el servicio se duerma:** el plan gratuito se suspende tras unos 15 minutos sin tráfico y tarda cerca de un minuto en despertar. Configura un monitor gratuito externo (UptimeRobot, cron-job.org o similar) que consulte `https://…onrender.com/health` **cada 10 minutos**, desde el 26 hasta el 30 de octubre. Un solo servicio gratuito encendido todo el mes cabe en las horas gratuitas mensuales de Render; revisa el límite vigente si tienes otros servicios gratuitos.
-- **Respaldos:** descarga **Admin IMAGO → Exportar → Descargar todo (ZIP)** al menos una vez al día y al terminar el evento.
+- **Evitar que el servicio se duerma:** el plan gratuito se suspende tras unos 15 minutos sin tráfico y tarda cerca de un minuto en despertar. Configura un monitor gratuito externo (UptimeRobot, cron-job.org o similar) que consulte `https://…onrender.com/health` **cada 10 minutos**, desde el 26 hasta el 30 de octubre, en el horario en que `/pantalla` no esté abierta (la pantalla ya mantiene el servicio despierto). Las 750 horas gratuitas son por workspace: con otros servicios Free en el mismo workspace pueden no alcanzar. Detalle en [DEPLOY_RENDER.md](DEPLOY_RENDER.md#5-mantener-despierto-el-servicio).
+- **Respaldos:** descarga **Admin IMAGO → Exportar → Descargar todo (ZIP)** al menos una vez al día, y un `pg_dump` con `bash scripts/backup-render.sh` al terminar el evento ([DEPLOY_RENDER.md](DEPLOY_RENDER.md#7-respaldos)).
 - **Televisor:** abre `/pantalla` en pantalla completa. Activa "Ranking público" en Configuración si quieres mostrar el ranking.
 
 ---
@@ -160,6 +164,13 @@ Ver [.env.example](.env.example).
 | Variable | Uso |
 |---|---|
 | `DATABASE_URL` | Conexión PostgreSQL. En Render la enlaza el Blueprint (conexión interna). SSL automático en producción. |
+| `DB_SSL`, `DB_SSL_REJECT_UNAUTHORIZED` | Opcionales. `DB_SSL=true/false` fuerza el SSL; si no, se usa `?sslmode=` de la URL o, sin él, `NODE_ENV`. |
+| `DB_POOL_MAX` | Opcional. Conexiones del pool (5 por defecto, tope 20). |
+| `HOST` | Opcional. Interfaz de escucha, `0.0.0.0` por defecto. |
+| `CLIENT_IP_HEADER`, `TRUST_PROXY` | IP real del visitante tras el proxy. En Render: `cf-connecting-ip` y `trust proxy` 1 (por defecto en producción). Ver [DEPLOY_RENDER.md](DEPLOY_RENDER.md#3-proxy-de-render-e-ip-real). |
+| `DB_EXPIRA_EN` | Fecha de vencimiento de la base Free (AAAA-MM-DD). El tablero muestra los días que faltan. |
+| `DB_LIMITE_MB`, `DB_MARGEN_EXPORTAR_DIAS` | Opcionales (1024 y 3): alertas de tamaño y de vencimiento del tablero. |
+| `DB_CONNECT_RETRIES`, `DB_RETRY_BASE_MS` | Opcionales (10 y 1000): reintentos de las migraciones si la base aún no responde. |
 | `SESSION_SECRET` | Mínimo 32 caracteres. El Blueprint lo genera. |
 | `BASE_URL` | URL pública sin `/` final. Define los QR. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crean el admin inicial si no existe (contraseña de 12 caracteres o más). Nunca cambian una cuenta existente. |

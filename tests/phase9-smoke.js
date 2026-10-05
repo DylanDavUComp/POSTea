@@ -26,12 +26,22 @@ function postRoutes(stack = app.router.stack, found = []) {
 }
 
 async function main() {
-  // Blueprint: lo que exige §10 de la especificación.
+  // Blueprint: lo que exige §10 de la especificación, con runtime Docker (ver DECISIONES.md).
   const blueprint = read('render.yaml');
-  for (const line of ['name: postea-imago', 'plan: free', 'runtime: node', 'buildCommand: npm ci', 'startCommand: npm run migrate && npm start',
+  for (const line of ['name: postea-imago', 'plan: free', 'runtime: docker', 'dockerfilePath: ./Dockerfile',
     'healthCheckPath: /health', 'name: postea-db', 'property: connectionString', 'key: SESSION_SECRET', 'generateValue: true']) {
     assert.ok(blueprint.includes(line), `render.yaml incluye «${line}»`);
   }
+  // Producción segura: NODE_ENV, IP real tras Cloudflare y secretos solo con sync: false (nunca con valor en el archivo).
+  assert.match(blueprint, /- key: NODE_ENV\s+value: production/);
+  assert.match(blueprint, /- key: CLIENT_IP_HEADER\s+value: cf-connecting-ip/);
+  for (const secret of ['BASE_URL', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'DB_EXPIRA_EN']) {
+    assert.match(blueprint, new RegExp(`- key: ${secret}\\s+sync: false`), `${secret} se pide en Render (sync: false)`);
+  }
+  assert.equal((blueprint.match(/plan: free/g) || []).length, 2, 'web y base en plan free');
+  // El contenedor migra y luego arranca; .env nunca entra en la imagen.
+  assert.match(read('Dockerfile'), /^CMD \["sh", "-c", "node scripts\/migrate\.js && exec node src\/server\.js"\]$/m);
+  assert.ok(read('.dockerignore').split(/\r?\n/).includes('.env'), '.env excluido de la imagen');
   const regions = [...blueprint.matchAll(/^\s+region:\s*(\S+)/gm)].map(m => m[1]);
   assert.equal(regions.length, 2); assert.equal(regions[0], regions[1], 'web y base en la misma región');
   assert.ok(!/^\s*branch:/m.test(blueprint), 'usa la rama por defecto del repositorio');

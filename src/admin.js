@@ -3,9 +3,10 @@ const express = require('express');
 const { z } = require('zod');
 const { pool } = require('./db');
 const { requireRole, csrfToken } = require('./account');
-const { loadConfig, parseDate, TZ } = require('./config');
-const { toCsv, parseCsv } = require('./csv');
-const { zip } = require('./zip');
+const { loadConfig, parseDate, TZ, publicBaseUrl, baseUrlProblem, qrUrlProblem } = require('./config');
+const { parseCsv } = require('./csv');
+const { sendCsv, sendBackupJson, sendExportZip, exclusive } = require('./exports');
+const { dbExpiry, dbSize, proxyDiagnostics, formatBytes } = require('./ops');
 const router = express.Router();
 const admin = requireRole('admin');
 
@@ -63,7 +64,8 @@ router.get('/admin', admin, async (req, res) => {
   const flowMap = Object.fromEntries(flow.map(r => [r.estado, r.n]));
   const roleMap = Object.fromEntries(users.map(r => [r.rol, r.n]));
   const config = await loadConfig();
-  render(req, res, 'admin-dashboard', { title: 'Tablero IMAGO',
+  const ops = { expiry: dbExpiry(config), size: await dbSize(), proxy: proxyDiagnostics(req), formatBytes };
+  render(req, res, 'admin-dashboard', { title: 'Tablero IMAGO', ops,
     flow: FLOW_STATES.map(([key, label]) => ({ label, n: flowMap[key] || 0 })),
     programs, territories, scans, totals: totals[0], coinName: config.nombre_moneda || 'Imagos',
     roles: ROLES.map(rol => ({ rol, n: roleMap[rol] || 0 })),
@@ -273,8 +275,8 @@ router.post('/admin/usuarios/:id/restablecer', admin, handle('/admin/usuarios')(
 }));
 
 // ---------- Configuración ----------
-const bogotaInput = value => {
-  const date = parseDate(value);
+const bogotaInput = (value, end = false) => {
+  const date = parseDate(value, end);
   if (!date) return '';
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
@@ -286,14 +288,16 @@ const FLAGS = [['inversion_activa', 'Inversión activa', 'Permite invertir duran
   ['comentarios_activos', 'Comentarios activos', 'Permite comentar durante la exhibición.'],
   ['moderacion_previa', 'Moderación previa', 'Los comentarios esperan aprobación de IMAGO antes de publicarse.'],
   ['mostrar_ranking_publico', 'Ranking público', 'Muestra /ranking y el ranking en /pantalla.']];
-const baseUrl = () => (process.env.BASE_URL || '').replace(/\/$/, '');
-const provisionalUrl = () => !baseUrl() || /localhost|127\.0\.0\.1/.test(baseUrl());
+const baseUrl = publicBaseUrl;
+const END_KEYS = new Set(['fecha_cierre', 'fecha_exhibicion_fin']);
 
 router.get('/admin/configuracion', admin, async (req, res) => {
   const config = await loadConfig();
+  const confirmedFor = config.url_qr_confirmada === true ? config.url_qr_confirmada_para || null : null;
   render(req, res, 'admin-config', { title: 'Configuración · IMAGO', config, dateKeys: DATE_KEYS, flags: FLAGS,
-    dates: Object.fromEntries(DATE_KEYS.map(([key]) => [key, bogotaInput(config[key])])),
-    baseUrl: baseUrl(), provisional: provisionalUrl() });
+    dates: Object.fromEntries(DATE_KEYS.map(([key]) => [key, bogotaInput(config[key], END_KEYS.has(key))])),
+    baseUrl: baseUrl(), urlProblem: baseUrlProblem(), qrProblem: qrUrlProblem(config), confirmedFor,
+    renderSubdomain: /\.onrender\.com$/i.test((() => { try { return new URL(baseUrl()).hostname; } catch { return ''; } })()) });
 });
 
 router.post('/admin/configuracion', admin, handle('/admin/configuracion')(async (req, res) => {
@@ -325,9 +329,20 @@ router.post('/admin/configuracion', admin, handle('/admin/configuracion')(async 
 
 router.post('/admin/configuracion/url-qr', admin, handle('/admin/configuracion')(async (req, res) => {
   const confirm = req.body.accion === 'confirmar';
-  if (confirm && provisionalUrl()) throw new AdminError('BASE_URL todavía apunta a localhost o está vacía. Configura la URL definitiva de Render antes de confirmarla.');
+  const problem = baseUrlProblem();
+  if (confirm && problem) throw new AdminError(problem === 'BASE_URL apunta a localhost' || problem === 'BASE_URL está vacía'
+    ? 'BASE_URL todavía apunta a localhost o está vacía. Configura la URL definitiva de Render antes de confirmarla.'
+    : `${problem}. Corrígela en las variables de entorno antes de confirmarla.`);
   if (confirm && req.body.entiendo !== 'on') throw new AdminError('Marca la casilla para confirmar que la URL y los slugs no cambiarán después de imprimir.');
-  await pool.query(`INSERT INTO configuracion(clave,valor) VALUES('url_qr_confirmada',$1::jsonb) ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor`, [JSON.stringify(confirm)]);
+  // Se guarda la URL exacta confirmada: si BASE_URL cambia después, los QR vuelven a ser provisionales.
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const [key, value] of [['url_qr_confirmada', confirm], ['url_qr_confirmada_para', confirm ? baseUrl() : null]]) {
+      await client.query('INSERT INTO configuracion(clave,valor) VALUES($1,$2::jsonb) ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor', [key, JSON.stringify(value)]);
+    }
+    await client.query('COMMIT');
+  } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
   done(req, res, '/admin/configuracion', confirm ? 'URL de los QR confirmada. Ya puedes imprimir las piezas.' : 'La URL de los QR volvió a quedar como provisional.');
 }));
 
@@ -355,22 +370,6 @@ const EXPORTS = {
   programas: `SELECT p.id,p.nombre,f.nombre AS facultad,p.es_especializacion,p.cupo,p.activo FROM programas p JOIN facultades f ON f.id=p.facultad_id ORDER BY p.id`
 };
 
-// Respaldo completo: todas las tablas tal cual (sin contraseñas, sesiones ni tokens), con imágenes en base64.
-const BACKUP_TABLES = ['facultades', 'programas', 'territorios', 'usuarios', 'coordinadores_programa', 'investigaciones', 'investigadores',
-  'inversiones', 'comentarios', 'reportes_comentario', 'visitas', 'configuracion', 'schema_migrations'];
-async function backupJson({ images = true } = {}) {
-  const data = { generado_at: new Date().toISOString(), base_url: baseUrl(), tablas: {} };
-  for (const table of BACKUP_TABLES) {
-    const rows = (await pool.query(`SELECT * FROM ${table} ORDER BY 1`)).rows;
-    data.tablas[table] = rows.map(row => {
-      const copy = { ...row };
-      delete copy.password_hash;
-      if (table === 'investigaciones') copy.imagen = images && row.imagen ? row.imagen.toString('base64') : null;
-      return copy;
-    });
-  }
-  return JSON.stringify(data, null, 1);
-}
 const stamp = () => bogotaInput(new Date().toISOString()).replace(/[-:]/g, '').replace('T', '-');
 
 router.get('/admin/exportar', admin, async (req, res) => {
@@ -382,19 +381,19 @@ router.get('/admin/exportar', admin, async (req, res) => {
 router.get('/admin/exportar/:archivo', admin, async (req, res) => {
   const file = req.params.archivo;
   res.set('Cache-Control', 'no-store');
+  // Todas se envían por partes (src/exports.js): la memoria no crece con la cantidad de fichas o visitas.
   const csvMatch = file.match(/^(\w+)\.csv$/);
   if (csvMatch && EXPORTS[csvMatch[1]]) {
-    const rows = (await pool.query(EXPORTS[csvMatch[1]])).rows;
-    return res.attachment(`postea-${csvMatch[1]}-${stamp()}.csv`).type('text/csv; charset=utf-8').send(toCsv(rows));
+    res.attachment(`postea-${csvMatch[1]}-${stamp()}.csv`).type('text/csv; charset=utf-8');
+    return exclusive(res, () => sendCsv(res, EXPORTS[csvMatch[1]]));
   }
   if (file === 'respaldo.json') {
-    return res.attachment(`postea-respaldo-${stamp()}.json`).type('application/json').send(await backupJson({ images: req.query.imagenes !== '0' }));
+    res.attachment(`postea-respaldo-${stamp()}.json`).type('application/json');
+    return exclusive(res, () => sendBackupJson(res, { images: req.query.imagenes === '0' ? 'none' : 'inline', baseUrl: baseUrl() }));
   }
   if (file === 'todo.zip') {
-    const files = [];
-    for (const [key, sql] of Object.entries(EXPORTS)) files.push({ name: `${key}.csv`, data: toCsv((await pool.query(sql)).rows) });
-    files.push({ name: 'respaldo-completo.json', data: await backupJson() });
-    return res.attachment(`postea-exportacion-${stamp()}.zip`).type('application/zip').send(zip(files));
+    res.attachment(`postea-exportacion-${stamp()}.zip`).type('application/zip');
+    return exclusive(res, () => sendExportZip(res, EXPORTS, { baseUrl: baseUrl() }));
   }
   res.status(404).render('not-found', { title: 'Página no encontrada' });
 });

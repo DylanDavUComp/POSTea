@@ -1,0 +1,32 @@
+# Secretos y datos locales
+.env
+.env.*
+!.env.example
+respaldos/
+*.sql
+*.dump
+# (los patrones sin carpeta solo aplican a la raíz; las migraciones sí entran)
+!migrations/*.sql
+
+# Control de versiones y editores
+.git
+.gitignore
+.vscode
+.idea
+.claude
+
+# Dependencias y builds locales (se instalan dentro de la imagen)
+node_modules
+npm-debug.log*
+*.log
+coverage
+
+# Solo desarrollo: no forman parte de la imagen
+tests
+scripts/seed-demo.js
+scripts/demo-exhibicion.js
+compose.yml
+Dockerfile
+.dockerignore
+render.yaml
+*.md

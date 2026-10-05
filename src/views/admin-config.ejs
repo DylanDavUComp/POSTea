@@ -22,17 +22,19 @@
     <button class="button form-submit" type="submit">Guardar configuración</button>
   </form>
 
-  <section class="card section-gap qr-url <%= config.url_qr_confirmada === true && !provisional ? 'is-confirmed' : '' %>" aria-labelledby="url-qr">
+  <section class="card section-gap qr-url <%= !qrProblem ? 'is-confirmed' : '' %>" aria-labelledby="url-qr">
     <h2 id="url-qr">URL de los QR</h2>
     <p>Los QR apuntan a <code><%= baseUrl || '(BASE_URL vacía)' %>/f/…?src=qr</code>. Se generan al vuelo desde <code>BASE_URL</code>, así que cambiarla actualiza todos los QR.</p>
-    <% if (provisional) { %><p class="form-alert">BASE_URL apunta a localhost o está vacía: todas las piezas muestran «QR PROVISIONAL – NO IMPRIMIR». Configura la URL definitiva de Render en las variables de entorno.</p><% } %>
-    <% if (config.url_qr_confirmada === true && !provisional) { %>
+    <% if (urlProblem) { %><p class="form-alert"><%= urlProblem %>: todas las piezas muestran «QR PROVISIONAL – NO IMPRIMIR». Configura la URL definitiva (https) en las variables de entorno de Render.</p><% } %>
+    <% if (!urlProblem && confirmedFor && confirmedFor !== baseUrl) { %><p class="form-alert">La URL confirmada era <code><%= confirmedFor %></code> y BASE_URL cambió: las piezas volvieron a ser provisionales. Confirma la URL nueva solo si todavía no se ha impreso nada con la anterior.</p><% } %>
+    <% if (!urlProblem && renderSubdomain && qrProblem) { %><p class="status-note">La URL es un subdominio de <code>onrender.com</code>. Si se va a usar un dominio propio, configúralo y cambia BASE_URL <strong>antes</strong> de confirmar e imprimir.</p><% } %>
+    <% if (!qrProblem) { %>
       <p class="success-note">URL confirmada: las piezas se pueden imprimir. Después de imprimir, esta URL y los slugs no deben cambiar.</p>
       <form method="post" action="/admin/configuracion/url-qr" data-confirm="¿Volver a marcar la URL como provisional? Las piezas mostrarán otra vez «NO IMPRIMIR».">
         <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="accion" value="provisional">
         <button class="text-button" type="submit">Volver a marcar como provisional</button>
       </form>
-    <% } else if (!provisional) { %>
+    <% } else if (!urlProblem) { %>
       <form class="form-card flat" method="post" action="/admin/configuracion/url-qr">
         <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="accion" value="confirmar">
         <p class="status-note"><strong>Después de imprimir, esta URL y los slugs no deben cambiar.</strong> Verifica que la URL abre la app antes de confirmar.</p>

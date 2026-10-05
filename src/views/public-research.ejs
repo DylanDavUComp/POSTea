@@ -7,7 +7,7 @@
     <% if (item.subtitulo) { %><p class="subtitle"><%= item.subtitulo %></p><% } %>
     <p class="fiche-faculty"><strong><%= item.facultad %></strong> · <%= item.programa %></p>
     <span class="status-pill"><%= item.estado_investigacion === 'terminada' ? 'Terminada' : 'En desarrollo' %></span>
-    <figure><img class="public-hero-image" src="/media/investigaciones/<%= item.id %>" alt="Imagen de la investigación: <%= item.titulo %>" decoding="async" fetchpriority="high">
+    <figure><img class="public-hero-image" src="/media/investigaciones/<%= item.id %>/mini" srcset="/media/investigaciones/<%= item.id %>/mini 1080w, /media/investigaciones/<%= item.id %> 1600w" sizes="(max-width: 1040px) calc(100vw - 2rem), 1000px" alt="Imagen de la investigación: <%= item.titulo %>" decoding="async" fetchpriority="high">
       <% if (item.imagen_credito) { %><figcaption><%= item.imagen_credito %></figcaption><% } %>
     </figure>
     <p><strong>Investigadores:</strong> <%= researchers.map(r=>r.nombre_completo).join(' · ') %></p>

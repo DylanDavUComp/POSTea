@@ -2,8 +2,12 @@ const crypto = require('node:crypto');
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
+// 512 MB en Render: sin caché de libvips y un hilo por imagen para no agotar la memoria con subidas simultáneas.
+sharp.cache(false);
+sharp.concurrency(1);
 const { z } = require('zod');
 const { pool } = require('./db');
+const { submissionOpen } = require('./config');
 const { csrfToken, verifyCsrf, requireRole } = require('./account');
 
 const router = express.Router();
@@ -76,10 +80,8 @@ function formValues(body = {}) {
 
 async function submissionWindowOpen() {
   const result = await pool.query(`SELECT clave, valor FROM configuracion WHERE clave IN ('fecha_apertura', 'fecha_cierre')`);
-  const config = Object.fromEntries(result.rows.map(row => [row.clave, row.valor]));
-  const start = new Date(String(config.fecha_apertura).length === 10 ? `${config.fecha_apertura}T00:00:00-05:00` : config.fecha_apertura);
-  const end = new Date(config.fecha_cierre);
-  return Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && Date.now() >= start && Date.now() <= end;
+  // Mismo intérprete que el cronograma: un cierre sin hora (`2026-10-19`) no se lee como medianoche UTC.
+  return submissionOpen(Object.fromEntries(result.rows.map(row => [row.clave, row.valor])));
 }
 
 // Cupo de registro: fichas no archivadas del programa. Ampliarlo es una gestión interna con IMAGO, no desde la página.
@@ -184,18 +186,37 @@ function uploadAndCsrf(req, res, next) {
   });
 }
 
-router.get('/media/investigaciones/:id', async (req, res) => {
+// Variante para tarjetas y celulares: 1080 px cubren la ficha en un celular de pantalla 3x (unos 360 px de ancho útil)
+// y las tarjetas del muro; la de 1600 px queda para pantallas grandes y la pieza impresa.
+const MINI_SIZE = 1080;
+const miniFrom = image => sharp(image).resize(MINI_SIZE, MINI_SIZE, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
+
+async function serveImage(req, res, mini) {
   if (!/^\d+$/.test(req.params.id)) return res.sendStatus(404);
-  const result = await pool.query('SELECT imagen, imagen_mime, estado_flujo, autor_id, programa_id FROM investigaciones WHERE id = $1', [req.params.id]);
+  // Primero solo metadatos y el hash: si el navegador ya tiene la imagen (ETag) respondemos 304 sin leer los bytes.
+  const result = await pool.query(`SELECT md5(imagen) AS hash, estado_flujo, autor_id, programa_id, imagen_mini IS NOT NULL AS tiene_mini
+    FROM investigaciones WHERE id = $1`, [req.params.id]);
   const item = result.rows[0];
   const coordinatorAccess = item && req.user?.rol === 'coordinador' && req.user.estado === 'activo' &&
     !['borrador','archivada'].includes(item.estado_flujo) && (await pool.query(
       'SELECT 1 FROM coordinadores_programa WHERE usuario_id=$1 AND programa_id=$2', [req.user.id, item.programa_id])).rowCount > 0;
-  if (!item?.imagen || (item.estado_flujo !== 'publicada' && req.user?.rol !== 'admin' && String(req.user?.id) !== String(item.autor_id) && !coordinatorAccess)) return res.sendStatus(404);
+  if (!item?.hash || (item.estado_flujo !== 'publicada' && req.user?.rol !== 'admin' && String(req.user?.id) !== String(item.autor_id) && !coordinatorAccess)) return res.sendStatus(404);
   // Caché corta con ETag: si IMAGO aprueba una imagen nueva, el público la ve en minutos y no al día siguiente.
   res.set('Cache-Control', item.estado_flujo === 'publicada' ? 'public, max-age=300' : 'private, no-store');
-  res.type('image/webp').send(item.imagen);
-});
+  res.set('ETag', `"${item.hash}${mini ? '-m' : ''}"`);
+  res.type('image/webp');
+  if (req.fresh) return res.sendStatus(304);
+  if (!mini) return res.send((await pool.query('SELECT imagen FROM investigaciones WHERE id=$1', [req.params.id])).rows[0].imagen);
+  if (item.tiene_mini) return res.send((await pool.query('SELECT imagen_mini FROM investigaciones WHERE id=$1', [req.params.id])).rows[0].imagen_mini);
+  // Primera vez: se genera y se guarda. Solo si la imagen sigue siendo la misma (md5): una edición simultánea gana.
+  const { imagen } = (await pool.query('SELECT imagen FROM investigaciones WHERE id=$1', [req.params.id])).rows[0];
+  const small = await miniFrom(imagen);
+  await pool.query('UPDATE investigaciones SET imagen_mini=$1 WHERE id=$2 AND md5(imagen)=$3', [small, req.params.id, item.hash]);
+  res.send(small);
+}
+
+router.get('/media/investigaciones/:id', (req, res) => serveImage(req, res, false));
+router.get('/media/investigaciones/:id/mini', (req, res) => serveImage(req, res, true));
 
 // Imagen propuesta en una edición autorizada: solo el autor y el admin, nunca en público.
 router.get('/media/investigaciones/:id/propuesta', async (req, res) => {

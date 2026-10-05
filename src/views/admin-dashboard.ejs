@@ -2,6 +2,38 @@
 <main id="contenido" class="container section admin-page">
   <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Tablero</h1><p>Así va POSTEA. / tu ARTículo en este momento.</p></div></div>
   <%- include('partials/admin-nav',{current:'/admin'}) %>
+  <% const dayFmt = d => d.toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long', year: 'numeric' }); %>
+  <section class="card section-gap ops-panel" aria-labelledby="operacion">
+    <h2 id="operacion">Base de datos en Render</h2>
+    <% const e = ops.expiry; %>
+    <div class="ops-status ops-<%= e.level %>" id="vencimiento-base">
+      <% if (e.configured) { %>
+        <p><strong>Fecha de expiración de la base: <%= dayFmt(e.date) %>.</strong>
+          <% if (e.daysLeft < 0) { %>Venció hace <%= -e.daysLeft %> día<%= e.daysLeft === -1 ? '' : 's' %>: Render da 14 días de gracia para pasarla a un plan de pago antes de borrarla.
+          <% } else { %>Faltan <strong><%= e.daysLeft %> día<%= e.daysLeft === 1 ? '' : 's' %></strong>.<% } %></p>
+        <% if (e.coversEvent === false) { %><p>Vence antes del fin de la exhibición más <%= e.marginDays %> días para exportar (<%= dayFmt(e.needed) %>). Descarga un respaldo y planea la exportación final antes de esa fecha.</p><% } %>
+      <% } else if (e.invalid) { %>
+        <p><strong>DB_EXPIRA_EN no es una fecha válida (<code><%= e.invalid %></code>).</strong> Usa el formato AAAA-MM-DD.</p>
+      <% } else { %>
+        <p><strong>Configura <code>DB_EXPIRA_EN</code></strong> en Render → Environment con la fecha de vencimiento que muestra Render → postea-db (AAAA-MM-DD). La base gratuita vence 30 días después de creada.</p>
+      <% } %>
+      <% if (e.daysNeeded !== null) { %><p class="muted">Desde hoy hasta el fin de la exhibición más <%= e.marginDays %> días de margen: <%= e.daysNeeded %> días.</p><% } %>
+    </div>
+    <% const s = ops.size; %>
+    <div class="ops-status ops-<%= s.level %>" id="tamano-base">
+      <p><strong>Tamaño: <%= ops.formatBytes(s.bytes) %> de <%= ops.formatBytes(s.limitBytes) %> (<%= s.percent %> %).</strong>
+        <% if (s.level !== 'ok') { %>Pasó del 70 % del límite del plan gratuito: descarga un respaldo y revisa qué tabla crece.<% } %></p>
+      <table class="bar-table"><caption class="visually-hidden">Tablas más grandes</caption>
+        <thead><tr><th scope="col">Tabla</th><th scope="col">Tamaño</th></tr></thead><tbody>
+        <% for (const t of s.tables) { %><tr><th scope="row"><%= t.tabla %></th><td><%= ops.formatBytes(t.bytes) %></td></tr><% } %>
+      </tbody></table>
+    </div>
+    <details class="ops-details"><summary>Diagnóstico del proxy (IP real del visitante)</summary>
+      <p>IP usada para límites y visitas: <code><%= ops.proxy.clientIp %></code><% if (ops.proxy.header) { %> (cabecera <code><%= ops.proxy.header %></code><%= ops.proxy.headerValue ? '' : ', ausente: se usa req.ip' %>)<% } %>.
+        req.ip: <code><%= ops.proxy.reqIp %></code> · HTTPS detectado: <%= ops.proxy.secure ? 'sí' : 'no' %> · trust proxy: <code><%= String(ops.proxy.trustProxy) %></code>.</p>
+      <p>X-Forwarded-For (<%= ops.proxy.forwarded.length %> saltos): <code><%= ops.proxy.forwarded.join(', ') || '—' %></code>. La primera IP la puede escribir el cliente; en Render la confiable es la de Cloudflare (<code>cf-connecting-ip</code>).</p>
+    </details>
+  </section>
   <% const published = flow.find(f => f.label === 'Publicada').n; %>
   <div class="stat-grid">
     <div class="stat-tile"><span>Posts publicados</span><strong><%= published %></strong><small>de <%= projected %> proyectados según los cupos</small></div>

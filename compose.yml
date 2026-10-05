@@ -1,4 +1,6 @@
-# PostgreSQL local solo para desarrollo (producción usa la DATABASE_URL que entrega Render).
+# Desarrollo local. Render NO usa este archivo: construye el Dockerfile y entrega DATABASE_URL.
+#   docker compose up -d --wait            → solo PostgreSQL (lo usual: la app corre con `npm run dev`)
+#   docker compose --profile app up --build → PostgreSQL + la app en contenedor, como en Render
 # Puerto host 15432 para no chocar con otros proyectos que usan 5432.
 services:
   db:
@@ -18,6 +20,23 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+
+  app:
+    profiles: ["app"]
+    build: .
+    # SESSION_SECRET, ADMIN_*, BASE_URL… salen de .env; la conexión se redirige al servicio db.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://postea:postea@db:5432/postea
+      DB_SSL: "false"
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db_data:

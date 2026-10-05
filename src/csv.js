@@ -7,8 +7,11 @@ function cell(value) {
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+const BOM = '﻿';
+const csvLine = values => values.map(cell).join(',') + '\r\n';
+
 function toCsv(rows, columns = rows.length ? Object.keys(rows[0]) : []) {
-  return '﻿' + [columns.map(cell).join(','), ...rows.map(row => columns.map(c => cell(row[c])).join(','))].join('\r\n') + '\r\n';
+  return BOM + [columns.map(cell).join(','), ...rows.map(row => columns.map(c => cell(row[c])).join(','))].join('\r\n') + '\r\n';
 }
 
 function parseCsv(text) {
@@ -35,4 +38,4 @@ function parseCsv(text) {
   return rows.map(r => r.map(v => v.trim())).filter(r => r.some(v => v !== ''));
 }
 
-module.exports = { toCsv, parseCsv };
+module.exports = { toCsv, parseCsv, csvLine, BOM };

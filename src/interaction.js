@@ -4,6 +4,7 @@ const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { z } = require('zod');
 const { pool } = require('./db');
 const { loadConfig, participation } = require('./config');
+const { clientIp } = require('./client-ip');
 const router = express.Router();
 
 const COMMENT_TYPES = { pregunta: 'Pregunta', conexion: 'Conexión', aplicacion: 'Posible aplicación' };
@@ -14,7 +15,7 @@ class ActionError extends Error {}
 
 // En el campus muchas personas comparten la misma IP: los límites se cuentan por cuenta.
 const perUser = (windowMs, limit, message) => rateLimit({ windowMs, limit, standardHeaders: 'draft-8', legacyHeaders: false,
-  keyGenerator: req => req.user ? `u${req.user.id}` : ipKeyGenerator(req.ip),
+  keyGenerator: req => req.user ? `u${req.user.id}` : ipKeyGenerator(clientIp(req)),
   handler: (req, res) => req.params.slug
     ? flashBack(req, res, req.params.slug, { tipo: 'error', texto: message }, req.path.endsWith('/comentar') ? 'comenta' : 'invierte')
     : res.status(429).render('error', { title: 'Espera un momento', message }) });

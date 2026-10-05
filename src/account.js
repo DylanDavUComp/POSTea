@@ -6,6 +6,7 @@ const { z } = require('zod');
 const { pool } = require('./db');
 const { loadConfig, participation } = require('./config');
 const { balance, coinName, COMMENT_TYPES } = require('./interaction');
+const { clientIp } = require('./client-ip');
 
 const router = express.Router();
 const PRIVACY_VERSION = '2026-pruebas-01';
@@ -13,10 +14,11 @@ const PERSON_TYPES = ['estudiante', 'docente', 'investigador', 'semillero', 'pro
 // Frente al vidrio muchas personas comparten la IP de la wifi del campus: el registro tolera ráfagas
 // y el ingreso cuenta solo intentos fallidos por IP + correo.
 const registerLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false,
+  keyGenerator: req => ipKeyGenerator(clientIp(req)),
   message: 'Hubo muchos intentos de registro. Inténtalo más tarde.' });
 const loginLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false,
   skipSuccessfulRequests: true, requestWasSuccessful: (_req, res) => res.statusCode < 400,
-  keyGenerator: req => `${ipKeyGenerator(req.ip)}|${String(req.body?.email || '').trim().toLowerCase().slice(0, 254)}`,
+  keyGenerator: req => `${ipKeyGenerator(clientIp(req))}|${String(req.body?.email || '').trim().toLowerCase().slice(0, 254)}`,
   message: 'Hubo muchos intentos de ingreso con este correo. Inténtalo en 15 minutos.' });
 
 const DUMMY_HASH = bcrypt.hashSync('postea-sin-cuenta', 12);
@@ -205,6 +207,7 @@ router.get('/mi-cuenta', requireAuth, async (req, res) => {
 
 // Restablecimiento con enlace de un solo uso generado por el admin (sin depender de correo).
 const resetLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
+  keyGenerator: req => ipKeyGenerator(clientIp(req)),
   message: 'Hubo muchos intentos. Inténtalo en 15 minutos.' });
 const tokenHash = token => crypto.createHash('sha256').update(String(token)).digest('hex');
 const validToken = token => typeof token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(token);

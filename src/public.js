@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const { pool } = require('./db');
 const { loadConfig, schedule, participation } = require('./config');
 const { fichePanel } = require('./interaction');
+const { clientIp } = require('./client-ip');
 const router = express.Router();
 const fields = `i.id,i.slug,i.titulo,i.pregunta_gancho,i.estado_investigacion,i.programa_id,i.territorio_id,
   p.nombre AS programa,f.id AS facultad_id,f.nombre AS facultad,t.nombre AS territorio`;
@@ -50,10 +51,12 @@ router.get('/muro', async (req, res) => {
   res.render('wall', { title:'Explora las investigaciones · POSTEA', items:items.rows, faculties:faculties.rows, programs:programs.rows, territories:territories.rows, filters });
 });
 
+// HMAC evita guardar IP o agente en claro. Usuarios autenticados se deduplican también entre dispositivos.
+const visitorHash = req => crypto.createHmac('sha256',process.env.SESSION_SECRET)
+  .update(`${clientIp(req)}\n${(req.get('user-agent') || '').slice(0,1000)}`).digest('hex');
+
 async function recordVisit(req, id) {
-  // HMAC evita guardar IP o agente en claro. Usuarios autenticados se deduplican también entre dispositivos.
-  const agent = crypto.createHmac('sha256',process.env.SESSION_SECRET)
-    .update(`${req.ip}\n${(req.get('user-agent') || '').slice(0,1000)}`).digest('hex');
+  const agent = visitorHash(req);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -95,3 +98,4 @@ router.get('/f/:slug', async (req,res) => {
     panel, flash, confirmCoins, presetType: panel.commentTypes[req.query.tipo] ? req.query.tipo : ''});
 });
 module.exports = router;
+module.exports.visitorHash = visitorHash;

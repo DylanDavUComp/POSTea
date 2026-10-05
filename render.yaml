@@ -5,18 +5,20 @@
 services:
   - type: web
     name: postea-imago
-    runtime: node
+    runtime: docker
     plan: free
     region: virginia
-    buildCommand: npm ci
-    # Aplica migraciones nuevas y arranca; al arrancar se crea el admin inicial si aún no existe.
-    startCommand: npm run migrate && npm start
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Sin dockerCommand: usa el CMD del Dockerfile (migraciones idempotentes y luego el servidor en $PORT).
+    # Al arrancar se crea el admin inicial si aún no existe. Node 24 LTS viene fijado en el Dockerfile.
+    # Liveness: 200 mientras el proceso atienda, aunque la base esté en mantenimiento (evita reinicios en bucle).
+    # La base se verifica en /health/db (para el monitor externo) y antes de escuchar (el CMD migra primero).
     healthCheckPath: /health
+    # Cada push a la rama redespliega. Recomendado: pasarlo a false desde el inicio de Producción (20 oct)
+    # hasta terminar la exhibición, y desplegar a mano (Manual Deploy) solo correcciones probadas.
     autoDeploy: true
     envVars:
-      # Node 24 LTS (Node 20 dejó de recibir parches de seguridad el 30/04/2026). Ver DECISIONES.md.
-      - key: NODE_VERSION
-        value: "24"
       - key: NODE_ENV
         value: production
       - key: TZ
@@ -40,6 +42,13 @@ services:
         sync: false
       - key: VISITOR_DOMAIN_RESTRICTED
         value: "false"
+      # Render pasa por Cloudflare: esta cabecera trae la IP real del visitante para los límites y las visitas.
+      # Verifícalo en Admin → Tablero → "Diagnóstico del proxy" después del primer despliegue.
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      # Fecha de vencimiento de la base Free (AAAA-MM-DD), la que muestra Render → postea-db. El tablero avisa.
+      - key: DB_EXPIRA_EN
+        sync: false
 
 databases:
   - name: postea-db

@@ -3,24 +3,23 @@ const QRCode = require('qrcode');
 const sharp = require('sharp');
 const { pool } = require('./db');
 const { requireAuth, requireRole, csrfToken } = require('./account');
-const { loadConfig } = require('./config');
+const { loadConfig, publicBaseUrl, qrUrlProblem } = require('./config');
 const { toCsv } = require('./csv');
-const { zip } = require('./zip');
+const { ZipWriter } = require('./zip');
+const { exclusive } = require('./exports');
 const router = express.Router();
 
 // §7: el QR se genera en cada solicitud desde BASE_URL + slug y nunca se guarda.
 const QR_OPTIONS = { errorCorrectionLevel: 'Q', margin: 4, color: { dark: '#000000', light: '#FFFFFF' } };
 const PNG_SIZE = 1200;
-const baseUrl = () => (process.env.BASE_URL || '').replace(/\/$/, '');
+const baseUrl = publicBaseUrl;
 const qrUrl = slug => `${baseUrl()}/f/${encodeURIComponent(slug)}?src=qr`;
 const id = value => /^\d{1,18}$/.test(String(value)) ? String(value) : null;
 
-// Provisional si la URL no está confirmada, si BASE_URL es local o si la ficha aún no está publicada (su slug puede cambiar).
+// Provisional si BASE_URL es local, vacía o sin https, si la URL no está confirmada (o cambió después de confirmarla)
+// o si la ficha aún no está publicada (su slug puede cambiar).
 function provisionalReason(config, research) {
-  if (!baseUrl() || /localhost|127\.0\.0\.1/.test(baseUrl())) return 'BASE_URL apunta a localhost';
-  if (config.url_qr_confirmada !== true) return 'la URL de los QR no está confirmada';
-  if (research.estado_flujo !== 'publicada') return 'la ficha aún no está publicada';
-  return null;
+  return qrUrlProblem(config) || (research.estado_flujo !== 'publicada' ? 'la ficha aún no está publicada' : null);
 }
 
 async function loadPrintable(researchId) {
@@ -56,8 +55,30 @@ function bandSvg(width, height, text) {
 }
 const MARK = 'QR PROVISIONAL – NO IMPRIMIR';
 
+// Misma rejilla de píxeles que el PNG de `qrcode` (utils.qrToImageData: negro y blanco puros, módulos escalados igual),
+// pero codificada por sharp en sus hilos nativos. `QRCode.toBuffer` codifica en JavaScript y bloqueaba la app ~76 ms
+// por QR: con 0,1 CPU, mientras se generaba el ZIP de QR una ficha tardaba de 2 a 10 s en cargar. Ahora ~1 ms.
+function qrGrid(text, width = PNG_SIZE) {
+  const { modules } = QRCode.create(text, { errorCorrectionLevel: QR_OPTIONS.errorCorrectionLevel });
+  const size = modules.size, scale = width / (size + QR_OPTIONS.margin * 2);
+  const symbol = Math.floor((size + QR_OPTIONS.margin * 2) * scale), margin = QR_OPTIONS.margin * scale;
+  const pixels = Buffer.alloc(symbol * symbol, 255);
+  let previous = -1;
+  for (let i = 0; i < symbol; i++) {
+    if (i < margin || i >= symbol - margin) continue;
+    const row = Math.floor((i - margin) / scale);
+    // Las filas del mismo módulo son idénticas: se copian.
+    if (row === previous) { pixels.copyWithin(i * symbol, (i - 1) * symbol, i * symbol); continue; }
+    previous = row;
+    for (let j = 0; j < symbol; j++) {
+      if (j >= margin && j < symbol - margin && modules.data[row * size + Math.floor((j - margin) / scale)]) pixels[i * symbol + j] = 0;
+    }
+  }
+  return sharp(pixels, { raw: { width: symbol, height: symbol, channels: 1 } }).png().toBuffer();
+}
+
 async function qrPng(slug, provisional) {
-  const png = await QRCode.toBuffer(qrUrl(slug), { ...QR_OPTIONS, type: 'png', width: PNG_SIZE });
+  const png = await qrGrid(qrUrl(slug));
   if (!provisional) return png;
   const band = Math.round(PNG_SIZE * 0.12);
   const bandPng = await sharp(Buffer.from(bandSvg(PNG_SIZE, band, MARK))).png().toBuffer();
@@ -143,17 +164,25 @@ router.get('/admin/impresion/qr.zip', requireRole('admin'), async (req, res) => 
   const rows = (await pool.query(`SELECT i.id,i.slug,i.titulo,i.estado_flujo,p.nombre AS programa,t.nombre AS territorio
     FROM investigaciones i JOIN programas p ON p.id=i.programa_id LEFT JOIN territorios t ON t.id=i.territorio_id
     WHERE i.estado_flujo='publicada' ORDER BY p.nombre,i.titulo`)).rows;
-  const files = [];
-  for (const row of rows) {
-    const provisional = Boolean(provisionalReason(config, row));
-    const name = `${fileName(row)}${provisional ? '-PROVISIONAL' : ''}`;
-    files.push({ name: `png/${name}.png`, data: await qrPng(row.slug, provisional) }, { name: `svg/${name}.svg`, data: await qrSvgFile(row.slug, provisional) });
-  }
-  files.push({ name: 'indice.csv', data: toCsv(rows.map(r => ({ titulo: r.titulo, programa: r.programa, territorio: r.territorio, slug: r.slug,
-    url_qr: qrUrl(r.slug), provisional: provisionalReason(config, r) ? 'sí' : 'no' }))) });
-  const stamp = new Date().toISOString().slice(0, 10);
+  // Fecha de Bogotá en el nombre (en Render el servidor está en UTC: después de las 7 p. m. saldría el día siguiente).
+  const stamp = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
   res.set('Cache-Control', 'no-store').attachment(`postea-qr-${stamp}${provisionalReason(config, { estado_flujo: 'publicada' }) ? '-PROVISIONAL' : ''}.zip`)
-    .type('application/zip').send(zip(files));
+    .type('application/zip');
+  // Por partes: cada QR se genera y se envía antes de pasar al siguiente.
+  await exclusive(res, async () => {
+    const archive = new ZipWriter(res);
+    for (const row of rows) {
+      const provisional = Boolean(provisionalReason(config, row));
+      const name = `${fileName(row)}${provisional ? '-PROVISIONAL' : ''}`;
+      await archive.add(`png/${name}.png`, await qrPng(row.slug, provisional));
+      await archive.add(`svg/${name}.svg`, await qrSvgFile(row.slug, provisional));
+      // Generar el PNG ocupa la CPU (0,1 CPU en Render Free): se cede el turno para que las visitas no esperen todo el lote.
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    await archive.add('indice.csv', toCsv(rows.map(r => ({ titulo: r.titulo, programa: r.programa, territorio: r.territorio, slug: r.slug,
+      url_qr: qrUrl(r.slug), provisional: provisionalReason(config, r) ? 'sí' : 'no' }))));
+    await archive.end();
+  });
 });
 
 // Va después de /lote y /qr.zip para que esas rutas no se lean como un id.
