@@ -394,7 +394,7 @@ body.print-doc { background:#E9E4F0; }
 @media (max-width:480px) { .brand-group { gap:.6rem; } .brand-u { height:20px; padding-right:.6rem; } }
 @media (min-width:900px) {
   .hero-inner { display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:3rem; align-items:center; }
-  .hero-card { display:block; width:100%; height:auto; transform:rotate(3deg); filter:drop-shadow(0 18px 30px rgb(0 0 0 / .35)); }
+  .hero-card { display:block; width:100%; height:auto; filter:drop-shadow(0 18px 30px rgb(0 0 0 / .35)); }
 }
 /* Panel de operación (tablero admin): vencimiento y tamaño de la base de Render. */
 .ops-panel { display:grid; gap:.9rem; }
