@@ -35,7 +35,7 @@
       <input id="wants_to_post" type="checkbox" name="wants_to_post" value="si" <%= values.wantsToPost ? 'checked' : '' %> <%= options.length ? '' : 'disabled' %>>
       <span>Voy a postear una investigación</span>
     </label>
-    <% if (!options.length) { %><p class="field-help">El registro de autores estará disponible cuando IMAGO cargue los programas.</p><% } else { %><p class="field-help">Un coordinador de tu programa deberá activar tu cuenta de autor.</p><% } %>
+    <% if (!options.length) { %><p class="field-help">El registro de autores estará disponible cuando IMAGO cargue los programas.</p><% } else { %><p class="field-help">Podrás crear tus fichas apenas te registres. Antes de publicarse, cada ficha la revisa IMAGO.</p><% } %>
 
     <label class="check-row" for="acepta_datos">
       <input id="acepta_datos" type="checkbox" name="acepta_datos" value="si" required <%= values.acepta_datos ? 'checked' : '' %>>

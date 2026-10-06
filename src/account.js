@@ -144,8 +144,9 @@ router.post('/registro', registerLimit, async (req, res) => {
     const result = await pool.query(`INSERT INTO usuarios
       (nombre, email, password_hash, rol, estado, tipo_persona, programa_id, acepta_datos_at, acepta_datos_version)
       VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8) RETURNING id`,
-      [data.nombre, data.email, hash, values.wantsToPost ? 'autor' : 'visitante',
-        values.wantsToPost ? 'pendiente' : 'activo', data.tipo_persona,
+      // Autores y visitantes quedan activos al registrarse: el autor crea fichas de inmediato. Lo que se revisa
+      // (coordinación e IMAGO) son las fichas antes de publicarse, no la cuenta.
+      [data.nombre, data.email, hash, values.wantsToPost ? 'autor' : 'visitante', 'activo', data.tipo_persona,
         data.programa_id || null, PRIVACY_VERSION]);
     await regenerate(req);
     req.session.userId = result.rows[0].id;

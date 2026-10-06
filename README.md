@@ -73,7 +73,7 @@ Cada prueba crea sus datos temporales, restaura la configuración y los elimina 
 |---|---|---|
 | Visitante | `/muro`, `/f/:slug`, `/mi-cuenta` | Explora, invierte sus Imagos, comenta, reporta comentarios y ve su historial. |
 | Autor | `/panel` | Crea y edita fichas en la convocatoria, ve la vista previa del post, la ficha y la pieza imprimible, y descarga su QR. |
-| Coordinador | `/coordinacion` | Activa autores de su programa, selecciona hasta 3 fichas o las devuelve con observaciones, y prueba y verifica el QR. |
+| Coordinador | `/coordinacion` | Activa autores pendientes de su programa (las cuentas nuevas ya quedan activas), selecciona hasta 3 fichas o las devuelve con observaciones, y prueba y verifica el QR. |
 | Admin IMAGO | **Admin IMAGO** (`/admin`) | Tablero, **aprobar y publicar en un paso** (con territorio), autorizar la edición de fichas publicadas y aprobar sus cambios, moderación, programas (importación CSV), territorios, usuarios, impresión, configuración y exportar. |
 
 Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` (televisor del evento, en pantalla completa con F11; se recarga cada 30 s).

@@ -22,7 +22,7 @@ const revalidate = (path, etag) => new Promise((resolve, reject) => require('nod
 const csrfOf = html => html.match(/name="_csrf" value="([a-f0-9]+)"/)[1];
 const suffix = crypto.randomBytes(5).toString('hex');
 const originalEnv = { BASE_URL: process.env.BASE_URL, DB_EXPIRA_EN: process.env.DB_EXPIRA_EN, DB_LIMITE_MB: process.env.DB_LIMITE_MB };
-let program, author, research, draft, savedConfig;
+let program, author, newAuthor, research, draft, savedConfig;
 
 async function login(email, password) {
   const page = await get('/ingresar');
@@ -69,8 +69,33 @@ async function main() {
     [`demo-operacion-${suffix}`, program, territory, author, image, proposal])).rows[0].id;
   const admin = await login(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
 
+  // Registro de autor: la cuenta queda activa y puede crear fichas sin esperar a la coordinación (solo se revisan las fichas).
+  let res;
+  const signupPage = await get('/registro');
+  const signupCookie = signupPage.headers.get('set-cookie').split(';')[0];
+  const domain = (process.env.ALLOWED_EMAIL_DOMAINS || '').split(',').map(x => x.trim()).filter(Boolean)[0] || 'example.com';
+  const authorEmail = `autor-nuevo-${suffix}@${domain}`;
+  res = await get('/registro', { method: 'POST', headers: { cookie: signupCookie }, body: new URLSearchParams({ _csrf: csrfOf(await signupPage.text()),
+    nombre: 'DEMO autor nuevo', email: authorEmail, password: 'clave-de-prueba-123', tipo_persona: 'docente', programa_id: String(program),
+    wants_to_post: 'si', acepta_datos: 'si', next: '/panel' }) });
+  assert.equal(res.status, 302, 'registro de autor');
+  const fresh = (await pool.query('SELECT id,rol,estado FROM usuarios WHERE email=$1', [authorEmail])).rows[0];
+  newAuthor = fresh.id;
+  assert.deepEqual([fresh.rol, fresh.estado], ['autor', 'activo'], 'el autor queda activo al registrarse');
+  const authorCookie = res.headers.get('set-cookie').split(';')[0];
+  res = await get('/panel', { headers: { cookie: authorCookie } });
+  assert.equal(res.status, 200, 'panel del autor disponible de inmediato');
+  assert.doesNotMatch(await res.text(), /Acceso pendiente|pendiente de activación/);
+  // Con la convocatoria abierta, el formulario de ficha nueva se abre sin activación previa.
+  const savedOpening = (await pool.query("SELECT clave,valor FROM configuracion WHERE clave IN ('fecha_apertura','fecha_cierre')")).rows;
+  await pool.query("UPDATE configuracion SET valor = CASE clave WHEN 'fecha_apertura' THEN '\"2000-01-01\"'::jsonb ELSE '\"2099-12-31T23:59:00-05:00\"'::jsonb END WHERE clave IN ('fecha_apertura','fecha_cierre')");
+  res = await get('/panel/investigaciones/nueva', { headers: { cookie: authorCookie } });
+  for (const r of savedOpening) await pool.query('UPDATE configuracion SET valor=$2 WHERE clave=$1', [r.clave, JSON.stringify(r.valor)]);
+  assert.equal(res.status, 200, 'el autor nuevo puede crear una ficha');
+  assert.match(await res.text(), /name="titulo"/);
+
   // /health es liveness (no toca la base); /health/db verifica la base.
-  let res = await get('/health');
+  res = await get('/health');
   assert.equal(res.status, 200); assert.equal(await res.text(), 'ok'); assert.equal(res.headers.get('cache-control'), 'no-store');
   res = await get('/health/db');
   assert.equal(res.status, 200); assert.equal(await res.text(), 'ok');
@@ -206,7 +231,7 @@ main().catch(error => { console.error(error); process.exitCode = 1; }).finally(a
       for (const key of ['url_qr_confirmada_para']) if (!saved.has(key)) await pool.query('DELETE FROM configuracion WHERE clave=$1', [key]);
     }
     for (const id of [research, draft].filter(Boolean)) { await pool.query('DELETE FROM visitas WHERE investigacion_id=$1', [id]); await pool.query('DELETE FROM investigaciones WHERE id=$1', [id]); }
-    if (author) await pool.query('DELETE FROM usuarios WHERE id=$1', [author]);
+    for (const id of [author, newAuthor].filter(Boolean)) { await pool.query("DELETE FROM sesiones WHERE sess->>'userId'=$1", [String(id)]); await pool.query('DELETE FROM usuarios WHERE id=$1', [id]); }
     if (program) await pool.query('DELETE FROM programas WHERE id=$1', [program]);
   } finally { server.close(); await pool.end(); }
 });
