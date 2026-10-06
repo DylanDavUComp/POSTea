@@ -6,7 +6,8 @@ const { fichePanel } = require('./interaction');
 const { clientIp } = require('./client-ip');
 const router = express.Router();
 const fields = `i.id,i.slug,i.titulo,i.pregunta_gancho,i.estado_investigacion,i.programa_id,i.territorio_id,
-  p.nombre AS programa,f.id AS facultad_id,f.nombre AS facultad,t.nombre AS territorio`;
+  p.nombre AS programa,f.id AS facultad_id,f.nombre AS facultad,t.nombre AS territorio,
+  (SELECT string_agg(nombre_completo,E'\\n' ORDER BY orden,id) FROM investigadores WHERE investigacion_id=i.id) AS investigadores`;
 const joins = `FROM investigaciones i JOIN programas p ON p.id=i.programa_id
   JOIN facultades f ON f.id=p.facultad_id JOIN territorios t ON t.id=i.territorio_id`;
 

@@ -113,11 +113,12 @@ async function main() {
   // Pieza de medio pliego.
   pieceHtml = await (await get(`/admin/impresion/${a.id}`, { headers: { cookie: admin } })).text();
   assert.doesNotMatch(pieceHtml, /class="sheet-watermark"/);
-  for (const text of ['Escanea y conoce la investigación', '¿Cómo caminamos la ciudad 0?', `María Rojas ${suffix} · Juan Pérez`, territory.nombre, 'UCompensar',
+  // Diseño de post IMAGO: título en la franja azul, investigadores, QR y llamado a la acción; el territorio va en el rótulo de pantalla.
+  for (const text of ['<b>Escanea</b> <span>y conoce la</span> <b>investigación</b>', longTitle.slice(0, 90), `María Rojas ${suffix} · Juan Pérez`, territory.nombre, 'UCompensar',
     'Imagen de referencia. Diseño sujeto a ajustes.', 'Probar QR', `href="${expected}"`]) {
     assert.ok(pieceHtml.includes(text), `pieza incluye ${text}`);
   }
-  assert.match(pieceHtml, /<div class="sheet-qr"><svg/); assert.match(pieceHtml, /class="sheet-icons"/);
+  assert.match(pieceHtml, /<div class="ig-post-qr"><svg/); assert.match(pieceHtml, /class="ig-post-bar"/); assert.match(pieceHtml, /class="ig-post-band"/);
   // La seleccionada sin publicar sigue provisional.
   assert.match(await (await get(`/admin/impresion/${c.id}`, { headers: { cookie: admin } })).text(), /la ficha aún no está publicada/);
 

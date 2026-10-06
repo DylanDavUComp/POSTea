@@ -29,7 +29,14 @@ async function main() {
       const counts = await Promise.all(['schema_migrations', 'facultades', 'territorios', 'programas', 'usuarios']
         .map(table => test.query(`SELECT count(*)::int AS n FROM ${table}`)));
       const migrationFiles = require('node:fs').readdirSync(require('node:path').join(__dirname, '..', 'migrations')).filter(f => /^\d+_.*\.sql$/.test(f)).length;
-      assert.deepEqual(counts.map(result => result.rows[0].n), [migrationFiles, 3, 5, 0, 0]);
+      assert.deepEqual(counts.map(result => result.rows[0].n), [migrationFiles, 3, 5, 22, 0]);
+      // Programas oficiales (migración 007): 8 de Ingeniería, 7 de Negocios y 7 de Ciencias Sociales; la segunda corrida no duplica.
+      const byFaculty = (await test.query(`SELECT f.nombre, count(*)::int AS n FROM programas p JOIN facultades f ON f.id=p.facultad_id
+        WHERE p.activo AND p.cupo=3 AND NOT p.es_especializacion GROUP BY f.nombre`)).rows;
+      assert.deepEqual(Object.fromEntries(byFaculty.map(r => [r.nombre, r.n])),
+        { 'Facultad de Ingeniería': 8, 'Escuela de Negocios': 7, 'Facultad de Ciencias Sociales y de la Educación': 7 });
+      // La convocatoria abre el 6 de octubre (migración 008).
+      assert.equal((await test.query("SELECT valor FROM configuracion WHERE clave='fecha_apertura'")).rows[0].valor, '2026-10-06');
       console.log('Migraciones desde base vacía e idempotencia: correctas.');
     } finally { await test.end(); }
   } finally {

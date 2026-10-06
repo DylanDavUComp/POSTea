@@ -1,13 +1,5 @@
-<article class="post-preview public-card fac-<%= item.facultad_id %> ter-<%= item.territorio_id %>">
-  <div class="post-top"><span class="post-avatar" aria-hidden="true"><%- include('ucompensar-mark') %></span><div><strong>UCompensar</strong><small><%= item.facultad %></small></div><span aria-hidden="true">•••</span></div>
-  <a class="post-media" href="/f/<%= item.slug %>" tabindex="-1" aria-hidden="true">
-    <img class="post-image" src="/media/investigaciones/<%= item.id %>/mini" alt="" loading="lazy" decoding="async" width="600" height="450">
-    <span class="territory-tag"><%= item.territorio %></span>
-  </a>
-  <div class="post-body">
-    <%- include('ig-icons') %>
-    <span class="status-pill"><%= item.estado_investigacion === 'terminada' ? 'Terminada' : 'En desarrollo' %></span>
-    <h3><a href="/f/<%= item.slug %>"><%= item.pregunta_gancho || item.titulo %></a></h3>
-    <p><%= item.titulo %></p><p class="muted"><%= item.programa %></p>
-  </div>
-</article>
+<%- include('post', { post: {
+  titulo: item.titulo, facultad: item.facultad, programa: item.programa, facultadId: item.facultad_id, territorioId: item.territorio_id,
+  investigadores: item.investigadores ? item.investigadores.split('\n') : [], href: `/f/${item.slug}`,
+  imageSrc: `/media/investigaciones/${item.id}/mini`, lazy: true, className: 'public-card',
+  qrSrc: `/f/${encodeURIComponent(item.slug)}/qr.svg`, qrHref: `/f/${item.slug}` } }) %>

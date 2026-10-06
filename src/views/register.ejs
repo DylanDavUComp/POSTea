@@ -19,7 +19,7 @@
     <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="password-help">
     <p class="field-help" id="password-help">Mínimo 8 caracteres.</p>
 
-    <label for="tipo_persona">Tipo de persona</label>
+    <label for="tipo_persona">Rol</label>
     <select id="tipo_persona" name="tipo_persona" required>
       <option value="">Selecciona una opción</option>
       <% personTypes.forEach(type => { %><option value="<%= type %>" <%= values.tipo_persona === type ? 'selected' : '' %>><%= type.charAt(0).toUpperCase() + type.slice(1) %></option><% }) %>

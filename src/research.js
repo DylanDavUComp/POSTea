@@ -7,7 +7,7 @@ sharp.cache(false);
 sharp.concurrency(1);
 const { z } = require('zod');
 const { pool } = require('./db');
-const { submissionOpen } = require('./config');
+const { submissionOpen, loadConfig, parseDate, formatDay } = require('./config');
 const { csrfToken, verifyCsrf, requireRole } = require('./account');
 
 const router = express.Router();
@@ -234,8 +234,12 @@ router.get('/panel', async (req, res) => {
       edicion_autorizada_at, cambios_estado, cambios_observaciones
     FROM investigaciones WHERE autor_id = $1 ORDER BY updated_at DESC`, [req.user.id])).rows;
   const windowOpen = await submissionWindowOpen();
+  const config = await loadConfig();
+  const opening = parseDate(config.fecha_apertura), closing = parseDate(config.fecha_cierre, true);
+  // Antes de la apertura: "abre el …"; después del cierre: "cerró el …".
+  const windowNote = windowOpen ? null : opening && new Date() < opening ? `abre el ${formatDay(opening)}` : closing ? `cerró el ${formatDay(closing)}` : 'no está abierta';
   const quota = req.user.programa_id ? await programQuota(pool, req.user.programa_id) : null;
-  res.render('panel', { title: 'Mis investigaciones', rows, windowOpen, quota, quotaMessage: quota?.full ? quotaMessage(quota) : null,
+  res.render('panel', { title: 'Mis investigaciones', rows, windowOpen, windowNote, quota, quotaMessage: quota?.full ? quotaMessage(quota) : null,
     canCreate: Boolean(quota) && !quota.full && (req.user.rol === 'admin' || windowOpen), csrf: csrfToken(req) });
 });
 

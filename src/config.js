@@ -44,7 +44,7 @@ function schedule(config, now = new Date()) {
     { name: 'Apertura de convocatoria', detail: 'Los autores crean y envían sus fichas.', start: opening, until: closing },
     { name: 'Cierre de convocatoria', detail: 'Los programas seleccionan sus tres investigaciones.', start: closing },
     { name: 'Producción', detail: 'IMAGO revisa, genera los QR y prepara las piezas.', start: productionStart, end: productionEnd, until: exhibitionStart },
-    { name: 'Exhibición', detail: 'Invierte, comenta y conecta en el piso 10.', start: exhibitionStart, end: exhibitionEnd, until: exhibitionEnd }
+    { name: 'Exhibición', detail: 'Invierte, comenta y conecta frente a los vidrios de la universidad.', start: exhibitionStart, end: exhibitionEnd, until: exhibitionEnd }
   ].map(item => ({ ...item, label: rangeLabel(item.start, item.end),
     current: Boolean(item.start && item.until && now >= item.start && now <= item.until) }));
   const exhibition = { start: exhibitionStart, end: exhibitionEnd,

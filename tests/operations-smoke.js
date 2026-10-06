@@ -104,10 +104,18 @@ async function main() {
   // Tarjetas y ficha piden la mini; la ficha ofrece la original para pantallas grandes.
   const fiche = await (await get(`/f/demo-operacion-${suffix}`)).text();
   assert.match(fiche, new RegExp(`srcset="/media/investigaciones/${research}/mini 1080w, /media/investigaciones/${research} 1600w"`));
+  // Post IMAGO en el muro: componente compartido con imagen tras la franja, investigadores y QR público cacheado.
+  const wall = await (await get('/muro')).text();
+  assert.match(wall, /class="ig-post public-card/); assert.match(wall, /class="ig-post-band"><h3 class="ig-post-title"><a href="\/f\/demo-operacion-/);
+  assert.match(wall, new RegExp(`src="/f/demo-operacion-${suffix}/qr.svg"`));
+  res = await get(`/f/demo-operacion-${suffix}/qr.svg`);
+  assert.equal(res.status, 200); assert.equal(res.headers.get('content-type'), 'image/svg+xml; charset=utf-8');
+  assert.equal(res.headers.get('cache-control'), 'public, max-age=86400'); assert.match(await res.text(), /^<svg/);
   // Una ficha no publicada no expone su mini.
   draft = (await pool.query(`INSERT INTO investigaciones(slug,programa_id,autor_id,titulo,imagen,imagen_mime)
     VALUES($1,$2,$3,'DEMO borrador',$4,'image/webp') RETURNING id`, [`demo-borrador-${suffix}`, program, author, image])).rows[0].id;
   assert.equal((await get(`/media/investigaciones/${draft}/mini`)).status, 404);
+  assert.equal((await get(`/f/demo-borrador-${suffix}/qr.svg`)).status, 404, 'sin QR público para borradores');
 
   // Respaldo JSON por partes: imagen y propuesta en base64 (antes la propuesta salía como arreglo de números), sin la mini.
   res = await get('/admin/exportar/respaldo.json', { headers: { cookie: admin } });

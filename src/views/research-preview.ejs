@@ -25,15 +25,11 @@
   </div>
   <% if (research.estado_flujo !== 'publicada') { %><p class="status-note">El QR queda marcado como provisional hasta que IMAGO publique la ficha: antes de eso su enlace todavía puede cambiar.</p><% } %>
   <div class="preview-grid">
-    <section class="post-preview" aria-labelledby="post-title">
-      <div class="post-top"><span class="post-avatar" aria-hidden="true"><%- include('partials/ucompensar-mark') %></span><div><strong>UCompensar</strong><small><%= research.facultad_nombre %></small></div><span aria-hidden="true">•••</span></div>
-      <% if (research.imagen) { %><img class="post-image" src="<%= typeof imageSrc !== 'undefined' && imageSrc ? imageSrc : `/media/investigaciones/${research.id}` %>" alt="Imagen de <%= research.titulo %>"><% } else { %><div class="image-placeholder">Imagen pendiente</div><% } %>
-      <div class="post-body"><p class="eyebrow">Investigación</p><h2 id="post-title"><%= research.pregunta_gancho || research.titulo %></h2>
-        <p><%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Investigadores pendientes' %></p>
-        <div class="post-icons" aria-hidden="true">♡　▢　➤　　▣</div>
-        <div class="preview-qr"><img src="/investigaciones/<%= research.id %>/qr.svg" alt="Código QR de esta investigación" width="160" height="160"><p>Escanea y conoce la investigación</p></div>
-      </div>
-    </section>
+    <%- include('partials/post', { post: {
+      titulo: research.titulo, facultad: research.facultad_nombre, programa: research.programa_nombre, headingTag: 'h2',
+      investigadores: research.investigadores ? research.investigadores.split('\n') : [],
+      imageSrc: research.imagen ? (typeof imageSrc !== 'undefined' && imageSrc ? imageSrc : `/media/investigaciones/${research.id}`) : null,
+      imageAlt: `Imagen de ${research.titulo}`, qrSrc: `/investigaciones/${research.id}/qr.svg` } }) %>
     <article class="fiche-preview">
       <p class="eyebrow">Ficha de investigación</p><h2><%= research.titulo %></h2>
       <% if (research.subtitulo) { %><p class="subtitle"><%= research.subtitulo %></p><% } %>

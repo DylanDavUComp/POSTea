@@ -406,3 +406,62 @@ body.print-doc { background:#E9E4F0; }
 .ops-danger { background:#FDE7EA; border-color:#B00020; color:#5C0010; }
 .ops-details summary { cursor:pointer; color:var(--purple-mid); font-weight:700; }
 .ops-details code { overflow-wrap:anywhere; }
+
+/* ---------- Post IMAGO (oct. 2026): muro, vista previa y pieza de 50 × 70 cm ----------
+   Medidas del diseño de 466 × 637 px expresadas en cqw (1cqw = 4,66 px del diseño): el mismo post escala igual
+   en una tarjeta de 360 px y en un pliego de 50 cm. Tipografías: Montserrat (titulares) y Century Gothic (texto). */
+:root { --post-navy:#2D2966; --post-navy-deep:#211D4C; --post-line:#D3D3DA; --post-orange:#F5A36B; --post-red:#E8232C;
+  --font-post-title:Montserrat,'Century Gothic',sans-serif; --font-post-text:'Century Gothic',CenturyGothic,AppleGothic,Questrial,Montserrat,sans-serif; }
+.ig-post { container-type:inline-size; width:100%; min-width:0; background:white; border:1px solid var(--post-line); color:var(--post-navy); }
+.ig-post-frame { display:flex; flex-direction:column; height:100%; font-family:var(--font-post-text); line-height:1.2; }
+.ig-post-head { display:flex; align-items:center; gap:2cqw; height:13.5cqw; padding:0 4.3cqw 0 4.7cqw; border-bottom:.22cqw solid var(--post-line); box-sizing:border-box; }
+.ig-post-avatar { flex:0 0 9.4cqw; width:9.4cqw; height:9.4cqw; border-radius:50%; padding:.65cqw; box-sizing:border-box;
+  background:linear-gradient(45deg,#F9A33A,#EE4F6D 60%,#D6338E); display:grid; }
+.ig-post-avatar img { width:100%; height:100%; box-sizing:border-box; border-radius:50%; background:white; object-fit:contain; padding:1.1cqw .7cqw; border:.45cqw solid white; }
+.ig-post-who { display:grid; min-width:0; color:#1D1B2E; }
+.ig-post-who strong { font-family:var(--font-post-title); font-weight:700; font-size:3.25cqw; line-height:1.15; color:#151326; }
+.ig-post-who span { font-size:2.65cqw; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ig-post-more { margin-left:auto; flex:0 0 5.2cqw; width:5.2cqw; height:5.2cqw; fill:#3A3A44; }
+/* Imagen: ocupa todo el bloque y queda detrás de la franja azul inclinada. */
+.ig-post-media { position:relative; flex:1 0 auto; min-height:91cqw; background:white; overflow:hidden; }
+.ig-post-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.ig-post-pending { position:absolute; inset:0 0 25cqw; display:grid; place-items:center; color:#9A98AE; font-size:3.4cqw; }
+.ig-post-band { position:absolute; left:0; right:0; bottom:0; min-height:25.1cqw; box-sizing:border-box; display:flex; align-items:flex-end;
+  padding:9.5cqw 6cqw 6.6cqw; background:linear-gradient(180deg,var(--post-navy) 0%,var(--post-navy-deep) 100%);
+  clip-path:polygon(0 0,100% 4.7cqw,100% 100%,0 100%); }
+.ig-post-title { margin:0; font-family:var(--font-post-title); font-weight:700; font-size:5.15cqw; line-height:1.18; color:white; letter-spacing:-.01em; overflow-wrap:anywhere; }
+.ig-post-title a { color:inherit; text-decoration:none; }
+.ig-post-title a:hover,.ig-post-title a:focus-visible { text-decoration:underline; text-decoration-thickness:.3cqw; }
+/* Investigadores · divisor · QR · llamado a la acción. */
+.ig-post-info { --qr:12.2cqw; display:flex; align-items:center; min-height:23.2cqw; padding:3cqw 4.7cqw 3cqw 3cqw; box-sizing:border-box; border-bottom:.22cqw solid var(--post-line); }
+.ig-post-researchers { flex:1 1 0; min-width:0; margin:0 3cqw 0 0; text-align:center; color:#1D1B2E; overflow-wrap:anywhere; }
+.ig-post-researchers.is-few { font-size:3.85cqw; }
+.ig-post-researchers.is-some { font-size:3cqw; }
+.ig-post-researchers.is-many { font-size:2.5cqw; }
+.ig-post-divider { flex:0 0 .45cqw; align-self:stretch; max-height:10cqw; margin:auto 0; background:var(--post-navy); height:10cqw; }
+.ig-post-qr { flex:0 0 var(--qr); width:var(--qr); height:var(--qr); margin-left:3.2cqw; box-sizing:border-box; padding:.6cqw; border:.32cqw solid var(--post-orange);
+  border-radius:1.3cqw; background:white; display:grid; place-items:center; }
+.ig-post-qr svg,.ig-post-qr img,.ig-post-qr a { display:block; width:100%; height:100%; }
+.ig-post-qr.is-provisional { outline:.8cqw dashed #B00020; outline-offset:.6cqw; }
+.ig-post-scan { flex:0 0 auto; margin:0 0 0 3cqw; display:grid; font-size:3.1cqw; line-height:1.12; color:var(--post-navy); }
+.ig-post-scan b { font-family:var(--font-post-title); font-weight:700; }
+.ig-post-scan span { font-family:var(--font-post-text); }
+/* Barra de íconos decorativa. */
+.ig-post-bar { display:flex; align-items:center; gap:4.7cqw; height:9cqw; padding:0 4.3cqw 0 3.6cqw; box-sizing:border-box; color:#2E2B44; }
+.ig-post-bar svg { flex:0 0 6.3cqw; width:6.3cqw; height:6.3cqw; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round; }
+.ig-post-bar svg.is-like { fill:var(--post-red); stroke:var(--post-red); }
+.ig-post-bar svg:last-child { margin-left:auto; }
+.ig-post-dots { display:flex; gap:1.7cqw; margin-left:9cqw; }
+.ig-post-dots i { width:1.3cqw; height:1.3cqw; border-radius:50%; background:#C5C9D6; }
+.ig-post-dots i:first-child { background:#4F72C2; }
+/* En el muro: tarjeta enlazada; el ancho máximo conserva la lectura de un post de celular. */
+.public-grid .ig-post { max-width:466px; justify-self:center; }
+.preview-grid .ig-post { max-width:520px; align-self:start; }
+/* Pieza de 50 × 70 cm: el post ocupa el pliego; la imagen absorbe la diferencia de alto (diseño 466 × 637 ≈ 50 × 68,3 cm).
+   El QR impreso mide 8,5 cm (17cqw) y no 6,1 cm: la especificación exige al menos 8 cm para leerlo a 1 m. */
+.sheet.sheet-post-only { padding:0; background:white; display:block; }
+.sheet.sheet-post-only .ig-post { height:100%; border:0; }
+.sheet.sheet-post-only .ig-post-info { --qr:17cqw; }
+.sheet-caption { display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; justify-content:space-between; max-width:50cm; margin:0 auto -1.2rem; font-size:.95rem; color:var(--purple); }
+.sheet-caption .territory-tag { position:static; }
+@media print { .sheet-caption { display:none; } }

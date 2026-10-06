@@ -117,10 +117,10 @@ El servicio Free **se duerme tras 15 min sin tráfico entrante** y tarda cerca d
 
 ## 6. Vida de la base gratuita
 
-- **Fechas:** con la configuración por defecto (exhibición hasta el 30 oct 23:59), desde hoy (5 oct) hasta el final de la exhibición más 3 días para exportar hay **29 días**.
-- ⚠️ **Eso supera 25 días y queda a 1 día de los 30 de vida de la base.**
-  - Si la base se crea **hoy, 5 de octubre**, vence el **4 de noviembre**: cubre el evento y deja el margen justo.
-  - Crearla después del 5 de octubre retrasa el despliegue con la convocatoria ya abierta.
+- **Fechas:** con la configuración por defecto (exhibición hasta el 30 oct 23:59), desde la apertura de la convocatoria (6 oct) hasta el final de la exhibición más 3 días para exportar hay **28 días**.
+- ⚠️ **Eso supera 25 días y queda a 2 días de los 30 de vida de la base.**
+  - Si la base se crea **el 6 de octubre** (día de apertura), vence el **5 de noviembre**: cubre el evento y deja el margen justo.
+  - Crearla después del 6 de octubre retrasa el despliegue con la convocatoria ya abierta.
   - Recrearla, por ejemplo para "empezar limpio", reinicia el reloj, pero exige restaurar los datos (sección 7).
 - **Configura `DB_EXPIRA_EN`** con la fecha "Expires" de Render → postea-db. **Admin → Tablero → "Base de datos en Render"** muestra:
   - la fecha de expiración y los días que faltan. Cambia a naranja con menos de 7 días y a rojo con 2 o menos;
@@ -269,7 +269,7 @@ Revisa el consumo en Render → Workspace → **Billing / Usage** durante el eve
 
 - [ ] `.env` **no** versionado (`git ls-files .env` vacío). `npm test` pasa en local.
 - [ ] `docker build -t postea .` y simulación: `docker run --rm -p 8080:8080 -e PORT=8080 -e DATABASE_URL=... -e DB_SSL=false -e SESSION_SECRET=... postea` → `/health` y `/health/db` responden `ok`.
-- [ ] Base creada **hoy (5 oct)** o lo antes posible, y **`DB_EXPIRA_EN`** configurada con su fecha de vencimiento.
+- [ ] Base creada **el 6 oct (apertura)** o lo antes posible, y **`DB_EXPIRA_EN`** configurada con su fecha de vencimiento.
 - [ ] `BASE_URL` definitiva (https) **antes** de generar e imprimir QR; dominio propio configurado si aplica.
 - [ ] `ADMIN_EMAIL` y `ADMIN_PASSWORD` configurados. Tras el primer ingreso: contraseña cambiada y `ADMIN_PASSWORD` borrada (sección 8).
 - [ ] Web y base en Virginia. `DATABASE_URL` = *Internal* URL. Health Check Path `/health`. Docker Command vacío.

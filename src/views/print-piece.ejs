@@ -7,8 +7,8 @@
   <title><%= title %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/app.css?v=20260930-2">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Questrial&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css?v=20261006-1">
   <link rel="stylesheet" href="/css/catalogos.css">
 </head>
 <body class="print-doc">
@@ -33,41 +33,14 @@
   </header>
   <main class="sheets">
     <% for (const p of pieces) { %>
-      <article class="sheet fac-<%= p.facultad_id %> <%= p.territorio_id ? `ter-${p.territorio_id}` : '' %>" aria-label="Pieza: <%= p.titulo %>">
+      <%# Rótulo solo en pantalla (no se imprime): territorio y título, para ubicar la pieza en el vidrio. -%>
+      <p class="sheet-caption"><% if (p.territorio) { %><span class="territory-tag ter-<%= p.territorio_id %>"><%= p.territorio %></span><% } %><span><%= p.programa %></span></p>
+      <article class="sheet sheet-post-only" aria-label="Pieza: <%= p.titulo %>">
         <% if (p.provisional) { %><div class="sheet-watermark" aria-hidden="true">QR PROVISIONAL – NO IMPRIMIR</div><% } %>
-        <% if (p.territorio) { %><span class="sheet-territory"><%= p.territorio %></span><% } %>
-        <div class="sheet-post">
-          <div class="sheet-head">
-            <span class="sheet-avatar" aria-hidden="true"><%- include('partials/ucompensar-mark') %></span>
-            <div><strong>UCompensar</strong><span><%= p.facultad %></span></div>
-            <span class="sheet-more" aria-hidden="true">•••</span>
-          </div>
-          <div class="sheet-image">
-            <% if (p.tiene_imagen) { %><img src="/media/investigaciones/<%= p.id %>" alt="Imagen de la investigación"><% } else { %><span>Imagen pendiente</span><% } %>
-          </div>
-          <div class="sheet-icons" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
-            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-3.2-6.4A8 8 0 0 1 20 12zm0 0v8l-3-2.5"/></svg>
-            <svg viewBox="0 0 24 24"><path d="M21 4 3 11l7 2.5L12.5 21zM10 13.5 21 4"/></svg>
-            <span class="sheet-dots"><i></i><i></i><i></i></span>
-            <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
-          </div>
-          <div class="sheet-body">
-            <p class="sheet-label">Investigación · <%= p.programa %></p>
-            <h2 class="sheet-question"><%= p.pregunta_gancho || p.titulo %></h2>
-            <p class="sheet-researchers"><%= p.investigadores.join(' · ') %></p>
-          </div>
-          <div class="sheet-cta">
-            <div class="sheet-qr<%= p.provisional ? ' is-provisional' : '' %>"><%- p.qr %></div>
-            <div>
-              <p class="sheet-scan">Escanea y conoce la investigación</p>
-              <p class="sheet-steps">Descubre · Escanea · Explora · Conecta</p>
-              <p class="sheet-logo"><strong>POSTEA.</strong> / tu <b>ART</b>ículo</p>
-            </div>
-          </div>
-        </div>
-        <img class="sheet-u" src="/img/ucompensar/ucompensar-blanco.png" alt="UCompensar" width="794" height="218">
-        <p class="sheet-foot">Fundación Universitaria Compensar · Observatorio IMAGO · Semana de Innovación y Emprendimiento 2026 · Vigilada MinEducación</p>
+        <%- include('partials/post', { post: {
+          titulo: p.titulo, facultad: p.facultad, programa: p.programa, facultadId: p.facultad_id, territorioId: p.territorio_id,
+          investigadores: p.investigadores, headingTag: 'h2', imageSrc: p.tiene_imagen ? `/media/investigaciones/${p.id}` : null,
+          imageAlt: 'Imagen de la investigación', qrSvg: p.qr, provisional: Boolean(p.provisional) } }) %>
       </article>
     <% } %>
   </main>

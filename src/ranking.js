@@ -39,7 +39,7 @@ router.get('/ranking', async (req, res) => {
     filters, faculties: faculties.rows, territories: territories.rows, lists, coinName: config.nombre_moneda || 'Imagos' });
 });
 
-// Pantalla del piso 10: se recarga sola cada 30 s (meta refresh, sin JavaScript) y rota un territorio por recarga.
+// Pantalla del evento (televisor): se recarga sola cada 30 s (meta refresh, sin JavaScript) y rota un territorio por recarga.
 router.get('/pantalla', async (req, res) => {
   const config = await loadConfig();
   const showRanking = config.mostrar_ranking_publico === true;

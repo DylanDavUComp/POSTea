@@ -105,7 +105,7 @@ function formError(issue) {
     nombre: 'Escribe tu nombre completo (2 a 120 caracteres).',
     email: 'Escribe un correo válido.',
     password: 'Usa una contraseña de 8 a 72 bytes.',
-    tipo_persona: 'Selecciona tu tipo de persona.',
+    tipo_persona: 'Selecciona tu rol.',
     programa_id: 'Selecciona un programa válido.',
     acepta_datos: 'Debes aceptar el tratamiento de datos para continuar.'
   };

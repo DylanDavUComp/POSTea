@@ -1,0 +1,36 @@
+<%#
+  Post estilo Instagram (diseño IMAGO, oct. 2026). Un solo componente para el muro, la vista previa y la pieza de 50 × 70 cm.
+  Todas las medidas están en cqw (porcentaje del ancho del post), tomadas del diseño de 466 px: escala igual en pantalla y en papel.
+  post = { titulo, facultad, programa, investigadores: [], imageSrc, imageSrcset?, imageSizes?, imageAlt?, lazy?, href?,
+           qrSvg? (SVG en línea, para imprimir) | qrSrc? (URL de imagen), qrHref?, headingTag?, className?, facultadId?, territorioId? }
+-%>
+<% const names = (post.investigadores || []).map(n => String(n).trim()).filter(Boolean);
+   const Heading = post.headingTag || 'h3';
+   const sizeClass = names.length <= 2 ? 'few' : names.length <= 4 ? 'some' : 'many'; %>
+<article class="ig-post <%= post.className || '' %> <%= post.facultadId ? `fac-${post.facultadId}` : '' %> <%= post.territorioId ? `ter-${post.territorioId}` : '' %>">
+  <div class="ig-post-frame">
+    <header class="ig-post-head">
+      <span class="ig-post-avatar" aria-hidden="true"><img src="/img/ucompensar/ucompensar-color.png" alt="" width="794" height="218"></span>
+      <div class="ig-post-who"><strong>UCompensar</strong><span><%= post.facultad || 'Facultad' %></span><span><%= post.programa || 'Programa' %></span></div>
+      <svg class="ig-post-more" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </header>
+    <div class="ig-post-media">
+      <% if (post.imageSrc) { %><img class="ig-post-image" src="<%= post.imageSrc %>"<% if (post.imageSrcset) { %> srcset="<%= post.imageSrcset %>" sizes="<%= post.imageSizes || '100vw' %>"<% } %> alt="<%= post.imageAlt || '' %>"<% if (post.lazy) { %> loading="lazy"<% } %> decoding="async" width="1600" height="1200"><% } else { %><span class="ig-post-pending">Imagen pendiente</span><% } %>
+      <%# La imagen queda detrás de la franja azul: la franja crece hacia arriba si el título ocupa más líneas. -%>
+      <div class="ig-post-band"><<%= Heading %> class="ig-post-title"><% if (post.href) { %><a href="<%= post.href %>"><%= post.titulo %></a><% } else { %><%= post.titulo %><% } %></<%= Heading %>></div>
+    </div>
+    <div class="ig-post-info">
+      <p class="ig-post-researchers is-<%= sizeClass %>"><%= names.length ? names.join(' · ') : 'Investigadores' %></p>
+      <span class="ig-post-divider" aria-hidden="true"></span>
+      <div class="ig-post-qr<%= post.provisional ? ' is-provisional' : '' %>"><% if (post.qrSvg) { %><%- post.qrSvg %><% } else if (post.qrSrc) { %><% if (post.qrHref) { %><a href="<%= post.qrHref %>" tabindex="-1" aria-hidden="true"><% } %><img src="<%= post.qrSrc %>" alt="<%= post.qrHref ? '' : 'Código QR de la investigación' %>" loading="lazy" width="200" height="200"><% if (post.qrHref) { %></a><% } %><% } %></div>
+      <p class="ig-post-scan"><b>Escanea</b> <span>y conoce la</span> <b>investigación</b></p>
+    </div>
+    <footer class="ig-post-bar" aria-hidden="true">
+      <svg class="is-like" viewBox="0 0 24 24"><path d="M12 21s-8-5.1-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 15.9 12 21 12 21z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M3.6 20.4 5 16.2A8.5 8.5 0 1 1 8 19.2z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M21.5 2.5 2.5 9.8l7.6 3.1 3.1 7.6zM10.1 12.9 21.5 2.5"/></svg>
+      <span class="ig-post-dots"><i></i><i></i><i></i><i></i><i></i></span>
+      <svg viewBox="0 0 24 24"><path d="M6 2.8h12v18.4l-6-4.6-6 4.6z"/></svg>
+    </footer>
+  </div>
+</article>

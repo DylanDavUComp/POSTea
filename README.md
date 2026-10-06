@@ -76,7 +76,7 @@ Cada prueba crea sus datos temporales, restaura la configuración y los elimina 
 | Coordinador | `/coordinacion` | Activa autores de su programa, selecciona hasta 3 fichas o las devuelve con observaciones, y prueba y verifica el QR. |
 | Admin IMAGO | **Admin IMAGO** (`/admin`) | Tablero, **aprobar y publicar en un paso** (con territorio), autorizar la edición de fichas publicadas y aprobar sus cambios, moderación, programas (importación CSV), territorios, usuarios, impresión, configuración y exportar. |
 
-Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` (televisor del piso 10, en pantalla completa con F11; se recarga cada 30 s).
+Páginas del evento: `/ranking` (si se activa "Ranking público") y `/pantalla` (televisor del evento, en pantalla completa con F11; se recarga cada 30 s).
 
 **Imprimir:** Admin IMAGO → Impresión → Pieza (o lote) → *Imprimir / Guardar como PDF*, con márgenes *Ninguno*, escala *100 %* y *Gráficos de fondo*. Sale a 50 × 70 cm. Mientras la URL no esté confirmada, todo lleva la marca **QR PROVISIONAL – NO IMPRIMIR**. Haz una prueba de impresión real (QR de 8 cm escaneado desde 1 m) antes de producir todas las piezas.
 
@@ -90,16 +90,15 @@ El repositorio incluye [render.yaml](render.yaml): servicio web `postea-imago` (
 
 ### ⚠️ Antes de empezar: la base gratuita vence a los 30 días
 
-PostgreSQL Free de Render **vence 30 días después de creada** y no tiene respaldos. Según su documentación, luego queda un periodo corto para pasarla a un plan de pago antes de eliminarla; verifica las condiciones vigentes. Para cubrir de la apertura (5 oct) al cierre de la exhibición (30 oct) y dejar margen para exportar:
+PostgreSQL Free de Render **vence 30 días después de creada** y no tiene respaldos. Según su documentación, luego queda un periodo corto para pasarla a un plan de pago antes de eliminarla; verifica las condiciones vigentes. La convocatoria abre el **6 de octubre** y la exhibición cierra el **30 de octubre**; con 3 días de margen para exportar, la base debe durar hasta el 2 de noviembre:
 
 | Si creas el Blueprint el… | La base vence el… | ¿Sirve? |
 |---|---|---|
-| 29 sep | 29 oct | ❌ Vence durante la exhibición |
-| **1 oct** | **31 oct** | ✅ Recomendado |
-| 3 oct | 2 nov | ✅ Aún da tiempo de importar programas antes del 5 oct |
-| 5 oct o después | 4 nov o después | ⚠️ La convocatoria ya abrió sin programas cargados |
+| **6 oct (día de apertura)** | **5 nov** | ✅ Cubre el evento y el margen para exportar |
+| 7 oct | 6 nov | ⚠️ Sirve, pero la convocatoria ya abrió sin la app en línea |
+| 3 oct o antes | 2 nov o antes | ⚠️ Margen para exportar de 3 días o menos |
 
-Si quieres ensayar antes, crea un despliegue de prueba, **elimínalo** y haz el definitivo entre el 1 y el 3 de octubre.
+Los programas oficiales se cargan solos al desplegar (migración 007). Detalle y avisos del tablero en [DEPLOY_RENDER.md](DEPLOY_RENDER.md#6-vida-de-la-base-gratuita).
 
 ### Pasos
 

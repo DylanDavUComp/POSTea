@@ -120,6 +120,24 @@ router.get('/investigaciones/:id/qr.:formato', requireAuth, async (req, res) => 
   res.type('image/svg+xml').send(await qrSvgFile(item.slug, provisional));
 });
 
+// QR de las tarjetas del muro (solo fichas publicadas). Es el mismo enlace del QR impreso, sin bandas de aviso:
+// en pantalla no se imprime. Caché de un día en el navegador y en memoria (≈3 KB por ficha, se vacía si cambia BASE_URL).
+const publicQrCache = new Map();
+router.get('/f/:slug/qr.svg', async (req, res) => {
+  if (req.params.slug.length > 180) return res.sendStatus(404);
+  const key = `${baseUrl()}|${req.params.slug}`;
+  // La consulta va siempre (una ficha archivada deja de tener QR público); la caché solo evita regenerar el SVG.
+  const found = await pool.query("SELECT 1 FROM investigaciones WHERE slug=$1 AND estado_flujo='publicada'", [req.params.slug]);
+  if (!found.rowCount) return res.sendStatus(404);
+  let svg = publicQrCache.get(key);
+  if (!svg) {
+    svg = await qrSvg(req.params.slug);
+    if (publicQrCache.size >= 1000) publicQrCache.clear();
+    publicQrCache.set(key, svg);
+  }
+  res.set('Cache-Control', 'public, max-age=86400').type('image/svg+xml').send(svg);
+});
+
 async function piece(item, config) {
   return { ...item, url: qrUrl(item.slug), qr: await qrSvg(item.slug), provisional: provisionalReason(config, item) };
 }
