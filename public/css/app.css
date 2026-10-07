@@ -44,7 +44,13 @@ h1,h2,h3 { color:var(--purple); line-height:1.15; }
 .button { display:inline-flex; align-items:center; min-height:44px; padding:.7rem 1.25rem; background:var(--orange); color:#18111e; border-radius:12px; font-weight:700; text-decoration:none; }
 .button { border:0; cursor:pointer; font:inherit; font-weight:700; }
 .form-page { max-width:600px; padding-block:2.5rem 4rem; }
-.form-intro h1,.account-page h1,.legal-page h1 { font-size:clamp(2rem,7vw,3.5rem); margin:.25rem 0 1rem; }
+.account-page h1,.legal-page h1 { font-size:clamp(2rem,7vw,3.5rem); margin:.25rem 0 1rem; }
+/* Encabezado dentro de la tarjeta blanca de ingreso, registro y restablecimiento. */
+.form-intro { padding-bottom:1.1rem; margin-bottom:.4rem; border-bottom:1px solid #E7E1EE; }
+.form-intro .eyebrow { margin:0; }
+.form-intro h1 { font-size:clamp(1.75rem,6vw,2.4rem); line-height:1.1; margin:.3rem 0 .6rem; overflow-wrap:anywhere; }
+.form-intro p:last-child { margin-bottom:0; }
+.form-intro:only-child { padding-bottom:0; margin-bottom:0; border-bottom:0; }
 .form-card,.account-card { background:white; border-radius:22px; padding:1.5rem; box-shadow:0 5px 20px rgb(42 17 80 / .06); }
 .form-card { display:grid; gap:.6rem; }
 .form-card label:not(.check-row) { color:var(--purple); font-weight:700; margin-top:.6rem; }
@@ -88,7 +94,10 @@ h1,h2,h3 { color:var(--purple); line-height:1.15; }
 .slug-note { background:#EADFF7; color:var(--purple); border-radius:12px; padding:.8rem 1rem; overflow-wrap:anywhere; }
 .editor-form { display:grid; gap:1.5rem; margin-top:1.5rem; }
 .editor-section { border:0; padding:1.5rem; display:grid; gap:.5rem; min-width:0; }
-.editor-section legend { color:var(--purple); font-size:1.3rem; font-weight:900; padding:0 .2rem; }
+/* float saca el legend del borde del fieldset: queda como encabezado dentro de la tarjeta blanca. */
+.editor-section legend { float:left; width:100%; color:var(--purple); font-size:1.3rem; font-weight:900; padding:0 0 .3rem; margin:0; }
+.territory-other[hidden] { display:none; }
+.territory-other { display:grid; gap:.5rem; }
 .editor-section label:not(.check-row) { color:var(--purple); font-weight:700; margin-top:.8rem; }
 .editor-section input:not([type=checkbox]),.editor-section select,.editor-section textarea { width:100%; min-height:46px; padding:.75rem; border:1px solid #867994; border-radius:10px; background:white; color:#241b2e; font:inherit; }
 .editor-section textarea { resize:vertical; }
@@ -426,10 +435,16 @@ body.print-doc { background:#E9E4F0; }
 .ig-post-media { position:relative; flex:1 0 auto; min-height:91cqw; background:white; overflow:hidden; }
 .ig-post-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
 .ig-post-pending { position:absolute; inset:0 0 25cqw; display:grid; place-items:center; color:#9A98AE; font-size:3.4cqw; }
-.ig-post-band { position:absolute; left:0; right:0; bottom:0; min-height:25.1cqw; box-sizing:border-box; display:flex; align-items:flex-end;
-  padding:9.5cqw 6cqw 6.6cqw; background:linear-gradient(180deg,var(--post-navy) 0%,var(--post-navy-deep) 100%);
+/* Franja de alto fijo: la frase nunca le quita espacio a la imagen. El tamaño de letra baja según el largo
+   (clase is-xl…is-s, calculada en partials/post.ejs) para que hasta 3 líneas quepan dentro de la franja. */
+.ig-post-band { position:absolute; left:0; right:0; bottom:0; height:25.1cqw; box-sizing:border-box; display:flex; align-items:center;
+  padding:6.6cqw 6cqw 4.4cqw; overflow:hidden; background:linear-gradient(180deg,var(--post-navy) 0%,var(--post-navy-deep) 100%);
   clip-path:polygon(0 0,100% 4.7cqw,100% 100%,0 100%); }
-.ig-post-title { margin:0; font-family:var(--font-post-title); font-weight:700; font-size:5.15cqw; line-height:1.18; color:white; letter-spacing:-.01em; overflow-wrap:anywhere; }
+.ig-post-title { margin:0; font-family:var(--font-post-title); font-weight:700; font-size:5.5cqw; line-height:1.15; color:white; letter-spacing:-.01em;
+  overflow-wrap:anywhere; text-wrap:balance; }
+.ig-post-title.is-l { font-size:4.8cqw; }
+.ig-post-title.is-m { font-size:4.2cqw; line-height:1.12; }
+.ig-post-title.is-s { font-size:3.8cqw; line-height:1.12; }
 .ig-post-title a { color:inherit; text-decoration:none; }
 .ig-post-title a:hover,.ig-post-title a:focus-visible { text-decoration:underline; text-decoration-thickness:.3cqw; }
 /* Investigadores · divisor · QR · llamado a la acción. */

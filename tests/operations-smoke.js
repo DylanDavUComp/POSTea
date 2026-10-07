@@ -131,7 +131,7 @@ async function main() {
   assert.match(fiche, new RegExp(`srcset="/media/investigaciones/${research}/mini 1080w, /media/investigaciones/${research} 1600w"`));
   // Post IMAGO en el muro: componente compartido con imagen tras la franja, investigadores y QR público cacheado.
   const wall = await (await get('/muro')).text();
-  assert.match(wall, /class="ig-post public-card/); assert.match(wall, /class="ig-post-band"><h3 class="ig-post-title"><a href="\/f\/demo-operacion-/);
+  assert.match(wall, /class="ig-post public-card/); assert.match(wall, /class="ig-post-band"><h3 class="ig-post-title is-(xl|l|m|s)"><a href="\/f\/demo-operacion-/);
   assert.match(wall, new RegExp(`src="/f/demo-operacion-${suffix}/qr.svg"`));
   res = await get(`/f/demo-operacion-${suffix}/qr.svg`);
   assert.equal(res.status, 200); assert.equal(res.headers.get('content-type'), 'image/svg+xml; charset=utf-8');

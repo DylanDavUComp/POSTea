@@ -20,11 +20,12 @@
       <label for="titulo">Título <span class="required">*</span></label>
       <input id="titulo" name="titulo" required maxlength="90" data-counter value="<%= values.titulo || '' %>">
       <output for="titulo" class="counter">0 / 90</output>
+      <% if (research && research.estado_flujo === 'borrador') { %><label class="check-row" for="regenerar_slug"><input id="regenerar_slug" type="checkbox" name="regenerar_slug" value="si"><span>Generar un enlace nuevo a partir del título.</span></label><p class="field-help">El enlace queda fijo al publicar porque estará impreso en el QR.</p><% } %>
       <label for="subtitulo">Subtítulo <span class="optional">(opcional)</span></label>
       <input id="subtitulo" name="subtitulo" maxlength="180" value="<%= values.subtitulo || '' %>">
       <label for="pregunta_gancho">Pregunta o frase para el post <span class="required">*</span></label>
-      <input id="pregunta_gancho" name="pregunta_gancho" maxlength="80" data-counter value="<%= values.pregunta_gancho || '' %>">
-      <output for="pregunta_gancho" class="counter">0 / 80</output>
+      <input id="pregunta_gancho" name="pregunta_gancho" maxlength="80" data-counter aria-describedby="pregunta_gancho-help" value="<%= values.pregunta_gancho || '' %>">
+      <div class="field-meta"><span id="pregunta_gancho-help">Es la frase que aparece en la franja azul del post. El título se muestra en la ficha.</span><output for="pregunta_gancho" class="counter">0 / 80</output></div>
       <div class="editor-grid">
         <div><label for="tipo">Tipo de proyecto <span class="required">*</span></label><select id="tipo" name="tipo"><option value="">Selecciona</option>
           <% [['investigacion','Investigación'],['semillero','Semillero'],['proyecto_grado','Proyecto de grado'],['pasantia','Pasantía']].forEach(option => { %><option value="<%= option[0] %>" <%= values.tipo === option[0] ? 'selected' : '' %>><%= option[1] %></option><% }) %>
@@ -33,6 +34,21 @@
           <option value="en_desarrollo" <%= values.estado_investigacion === 'en_desarrollo' ? 'selected' : '' %>>En desarrollo</option><option value="terminada" <%= values.estado_investigacion === 'terminada' ? 'selected' : '' %>>Terminada</option>
         </select></div>
       </div>
+      <% if (editingPublished) { %>
+        <p class="field-help"><strong>Territorio:</strong> <%= research.territorio_nombre || 'asignado por IMAGO' %>. Se mantiene al editar una ficha publicada.</p>
+      <% } else { %>
+        <label for="territorio">Territorio de conexión <span class="required">*</span></label>
+        <select id="territorio" name="territorio" aria-describedby="territorio-help" data-other-target="territorio-otro-campo">
+          <option value="">Selecciona</option>
+          <% territories.forEach(t => { %><option value="<%= t.id %>" <%= values.territorio === String(t.id) ? 'selected' : '' %>><%= t.nombre %></option><% }) %>
+          <option value="otro" <%= values.territorio === 'otro' ? 'selected' : '' %>>Otro</option>
+        </select>
+        <p class="field-help" id="territorio-help">Agrupa tu post en el muro y en los vidrios. Si ninguno aplica, elige «Otro» y escribe cuál.</p>
+        <div class="territory-other" id="territorio-otro-campo">
+          <label for="territorio_otro">¿Cuál territorio? <span class="optional">(solo si elegiste «Otro»)</span></label>
+          <input id="territorio_otro" name="territorio_otro" maxlength="80" value="<%= values.territorio_otro || '' %>">
+        </div>
+      <% } %>
     </fieldset>
     <fieldset class="editor-section"><legend>02 · La ficha</legend>
       <% [['descripcion','Descripción'],['objetivo','Objetivo'],['metodologia','Metodología'],['resultados','Resultados']].forEach(field => { %>
@@ -53,11 +69,8 @@
       <input id="imagen_credito" name="imagen_credito" maxlength="180" value="<%= values.imagen_credito || '' %>">
       <label class="check-row" for="derechos_imagen_confirmados"><input id="derechos_imagen_confirmados" type="checkbox" name="derechos_imagen_confirmados" value="si" <%= values.derechos_imagen_confirmados ? 'checked' : '' %>><span>Tengo derechos de uso de esta imagen.</span></label>
     </fieldset>
-    <fieldset class="editor-section"><legend>04 · Enlace y publicación</legend>
-      <label for="sharepoint_url">Ficha en PDF (SharePoint) <span class="optional">(opcional)</span></label>
-      <input id="sharepoint_url" type="url" name="sharepoint_url" placeholder="https://..." value="<%= values.sharepoint_url || '' %>">
-      <% if (research && research.estado_flujo === 'borrador') { %><label class="check-row" for="regenerar_slug"><input id="regenerar_slug" type="checkbox" name="regenerar_slug" value="si"><span>Generar un enlace nuevo a partir del título.</span></label><p class="field-help">El enlace queda fijo al publicar porque estará impreso en el QR.</p><% } %>
-    </fieldset>
+    <%# Sin campo de PDF: si una ficha anterior ya tenía enlace a SharePoint, se conserva al guardar. -%>
+    <% if (values.sharepoint_url) { %><input type="hidden" name="sharepoint_url" value="<%= values.sharepoint_url %>"><% } %>
     <div class="editor-actions">
       <% if (error) { %><p class="form-alert action-error"><%= error %></p><% } %>
       <% if (editingPublished) { %>
@@ -69,6 +82,6 @@
       <% } %>
     </div>
   </form>
-  <script src="/js/form.js?v=20260928-2" defer></script>
+  <script src="/js/form.js?v=20261007-3" defer></script>
 </main>
 <%- include('partials/footer') %>

@@ -77,3 +77,12 @@ document.querySelectorAll('[data-select-all]').forEach(field => {
 });
 
 document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click', () => window.print()));
+
+// Territorio «Otro»: el campo para escribirlo solo se muestra cuando se elige esa opción.
+document.querySelectorAll('select[data-other-target]').forEach(select => {
+  const target = document.getElementById(select.dataset.otherTarget);
+  if (!target) return;
+  const update = () => { target.hidden = select.value !== 'otro'; };
+  select.addEventListener('change', () => { update(); if (!target.hidden) target.querySelector('input')?.focus(); });
+  update();
+});

@@ -39,7 +39,8 @@ function form(csrf, intent, title, complete = false) {
     metodologia: complete ? 'DEMO. La metodología combina lectura, observación y una revisión de resultados para probar la aplicación.' : '',
     resultados: complete ? 'DEMO. Los resultados muestran una vista previa y confirman que el flujo guarda la ficha enviada correctamente.' : '',
     estado_investigacion: complete ? 'en_desarrollo' : '', tipo: complete ? 'investigacion' : '',
-    imagen_credito: 'Imagen DEMO', sharepoint_url: '', investigadores: complete ? 'Investigador DEMO' : ''
+    imagen_credito: 'Imagen DEMO', sharepoint_url: '', investigadores: complete ? 'Investigador DEMO' : '',
+    territorio: complete ? 'otro' : '', territorio_otro: complete ? 'Territorio DEMO' : ''
   };
   for (const [key, value] of Object.entries(fields)) data.set(key, value);
   if (complete) data.set('derechos_imagen_confirmados', 'si');

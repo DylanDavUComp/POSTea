@@ -182,7 +182,9 @@ async function main() {
   const csvText = csvBytes.toString('utf8');
   assert.doesNotMatch(csvText, /password|\$2b\$/); assert.match(csvText, /"'=HYPERLINK\(""x""\) v1"/, 'fórmulas neutralizadas');
   for (const name of ['investigaciones', 'inversiones', 'comentarios', 'visitas', 'programas']) {
-    assert.equal((await get(`/admin/exportar/${name}.csv`, { headers: { cookie: adminCookie } })).status, 200);
+    // Se lee el archivo completo, como un navegador: una descarga a medias mantiene ocupada la exportación.
+    const exported = await get(`/admin/exportar/${name}.csv`, { headers: { cookie: adminCookie } });
+    assert.equal(exported.status, 200, `${name}.csv`); await exported.arrayBuffer();
   }
   const backup = JSON.parse(await (await get('/admin/exportar/respaldo.json', { headers: { cookie: adminCookie } })).text());
   assert.ok(backup.tablas.usuarios.every(u => !('password_hash' in u)));

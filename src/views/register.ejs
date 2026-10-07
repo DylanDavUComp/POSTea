@@ -1,11 +1,11 @@
 <%- include('partials/head', { title }) %>
 <main id="contenido" class="container form-page">
-  <div class="form-intro">
-    <p class="eyebrow">Participa en POSTEA</p>
-    <h1>Crea tu cuenta</h1>
-    <p>Regístrate para participar en las ideas durante la exhibición. Solo te tomará un momento.</p>
-  </div>
   <form class="form-card" action="/registro" method="post">
+    <div class="form-intro">
+      <p class="eyebrow">Participa en POSTEA</p>
+      <h1>Crea tu cuenta</h1>
+      <p>Regístrate para participar en las ideas durante la exhibición. Solo te tomará un momento.</p>
+    </div>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <input type="hidden" name="next" value="<%= nextUrl %>">
     <% if (error) { %><div class="form-alert" role="alert"><%= error %></div><% } %>

@@ -26,7 +26,7 @@
   <% if (research.estado_flujo !== 'publicada') { %><p class="status-note">El QR queda marcado como provisional hasta que IMAGO publique la ficha: antes de eso su enlace todavía puede cambiar.</p><% } %>
   <div class="preview-grid">
     <%- include('partials/post', { post: {
-      titulo: research.titulo, facultad: research.facultad_nombre, programa: research.programa_nombre, headingTag: 'h2',
+      titulo: research.titulo, frase: research.pregunta_gancho, facultad: research.facultad_nombre, programa: research.programa_nombre, headingTag: 'h2',
       investigadores: research.investigadores ? research.investigadores.split('\n') : [],
       imageSrc: research.imagen ? (typeof imageSrc !== 'undefined' && imageSrc ? imageSrc : `/media/investigaciones/${research.id}`) : null,
       imageAlt: `Imagen de ${research.titulo}`, qrSrc: `/investigaciones/${research.id}/qr.svg` } }) %>
@@ -35,6 +35,7 @@
       <% if (research.subtitulo) { %><p class="subtitle"><%= research.subtitulo %></p><% } %>
       <p><strong><%= research.facultad_nombre %></strong> · <%= research.programa_nombre %></p>
       <p><strong>Investigadores:</strong> <%= research.investigadores ? research.investigadores.split('\n').join(' · ') : 'Pendiente' %></p>
+      <p><strong>Territorio:</strong> <%= research.territorio_nombre || (research.territorio_propuesto ? `${research.territorio_propuesto} (nuevo, propuesto por el autor)` : 'Pendiente') %></p>
       <% [['01','Descripción','descripcion'],['02','Objetivo','objetivo'],['03','Metodología','metodologia'],['04','Resultados','resultados']].forEach(section => { %>
         <section class="fiche-section"><span><%= section[0] %></span><h3><%= section[1] %></h3><p><%= research[section[2]] || 'Pendiente por completar.' %></p></section>
       <% }) %>
@@ -42,6 +43,6 @@
       <p class="preview-warning">Esta vista es privada. La ficha pública estará disponible cuando IMAGO la publique.</p>
     </article>
   </div>
-  <script src="/js/form.js" defer></script>
+  <script src="/js/form.js?v=20261007-3" defer></script>
 </main>
 <%- include('partials/footer') %>

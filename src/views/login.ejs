@@ -1,7 +1,7 @@
 <%- include('partials/head', { title }) %>
 <main id="contenido" class="container form-page">
-  <div class="form-intro"><p class="eyebrow">Bienvenido de nuevo</p><h1>Ingresa a POSTEA</h1><p>Continúa explorando y participando en las ideas.</p></div>
   <form class="form-card" action="/ingresar" method="post">
+    <div class="form-intro"><p class="eyebrow">Bienvenido de nuevo</p><h1>Ingresa a POSTEA</h1><p>Continúa explorando y participando en las ideas.</p></div>
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <input type="hidden" name="next" value="<%= nextUrl %>">
     <% if (typeof notice !== 'undefined' && notice) { %><p class="success-note" role="status"><%= notice %></p><% } %>

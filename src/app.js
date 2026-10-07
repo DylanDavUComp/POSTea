@@ -34,6 +34,8 @@ app.use(compression({ threshold: 1024, filter: (req, res) => !/^\/admin\/(export
 app.use('/css', express.static(path.join(__dirname, '..', 'public', 'css'), { maxAge: '1d' }));
 app.use('/js', express.static(path.join(__dirname, '..', 'public', 'js'), { maxAge: '1d' }));
 app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img'), { maxAge: '7d' }));
+// Algunos navegadores piden /favicon.ico aunque la página declare su ícono.
+app.get('/favicon.ico', (_req, res) => res.redirect(301, '/img/favicon-48.png'));
 
 // Liveness (healthCheckPath de Render): 200 mientras el proceso atienda, aunque la base esté caída.
 // Render deja de enrutar tras 15 s de fallos y reinicia a los 60 s. Si /health dependiera de la base, un mantenimiento

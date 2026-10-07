@@ -110,6 +110,9 @@ async function exclusive(res, fn) {
       message: 'Ya hay una exportación descargándose. Espera a que termine e inténtalo de nuevo.' });
   }
   running = true;
+  // Se libera al terminar de enviar la respuesta: si se esperara al `finally`, una descarga pedida justo después
+  // (varios CSV seguidos) podría llegar antes y recibir «exportación en curso».
+  res.once('finish', () => { running = false; });
   try { await fn(); } catch (error) {
     // Si ya empezó la descarga no se puede mostrar una página de error: se corta para que el archivo quede
     // incompleto de forma evidente (el navegador marca la descarga como fallida) y no parezca válido.

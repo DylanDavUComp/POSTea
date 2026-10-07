@@ -1,5 +1,5 @@
 <%- include('post', { post: {
-  titulo: item.titulo, facultad: item.facultad, programa: item.programa, facultadId: item.facultad_id, territorioId: item.territorio_id,
+  titulo: item.titulo, frase: item.pregunta_gancho, facultad: item.facultad, programa: item.programa, facultadId: item.facultad_id, territorioId: item.territorio_id,
   investigadores: item.investigadores ? item.investigadores.split('\n') : [], href: `/f/${item.slug}`,
   imageSrc: `/media/investigaciones/${item.id}/mini`, lazy: true, className: 'public-card',
   qrSrc: `/f/${encodeURIComponent(item.slug)}/qr.svg`, qrHref: `/f/${item.slug}` } }) %>

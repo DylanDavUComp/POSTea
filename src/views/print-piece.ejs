@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title><%= title %></title>
+  <%- include('partials/favicon') %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Questrial&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/app.css?v=20261006-1">
+  <link rel="stylesheet" href="/css/app.css?v=20261007-3">
   <link rel="stylesheet" href="/css/catalogos.css">
 </head>
 <body class="print-doc">
@@ -38,12 +39,12 @@
       <article class="sheet sheet-post-only" aria-label="Pieza: <%= p.titulo %>">
         <% if (p.provisional) { %><div class="sheet-watermark" aria-hidden="true">QR PROVISIONAL – NO IMPRIMIR</div><% } %>
         <%- include('partials/post', { post: {
-          titulo: p.titulo, facultad: p.facultad, programa: p.programa, facultadId: p.facultad_id, territorioId: p.territorio_id,
+          titulo: p.titulo, frase: p.pregunta_gancho, facultad: p.facultad, programa: p.programa, facultadId: p.facultad_id, territorioId: p.territorio_id,
           investigadores: p.investigadores, headingTag: 'h2', imageSrc: p.tiene_imagen ? `/media/investigaciones/${p.id}` : null,
           imageAlt: 'Imagen de la investigación', qrSvg: p.qr, provisional: Boolean(p.provisional) } }) %>
       </article>
     <% } %>
   </main>
-  <script src="/js/form.js?v=20260929-4" defer></script>
+  <script src="/js/form.js?v=20261007-3" defer></script>
 </body>
 </html>

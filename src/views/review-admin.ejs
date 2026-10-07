@@ -24,9 +24,10 @@
         <% } else { %>
           <form class="approve-form" method="post" action="/admin/investigaciones/<%= item.id %>/publicar">
             <%- csrfField %>
-            <label for="territorio-<%= item.id %>">Territorio</label>
+            <label for="territorio-<%= item.id %>">Territorio <span class="optional">(elegido por el autor)</span></label>
             <select id="territorio-<%= item.id %>" name="territorio_id" required>
               <option value="">Selecciona un territorio</option>
+              <% if (item.territorio_propuesto && !item.territorio_id) { %><option value="nuevo" selected>Crear «<%= item.territorio_propuesto %>» (propuesto por el autor)</option><% } %>
               <% for (const territory of territories) { %><option value="<%= territory.id %>" <%= String(territory.id) === String(item.territorio_id) ? 'selected' : '' %>><%= territory.nombre %></option><% } %>
             </select>
             <button class="button" type="submit">Aprobar y publicar</button>
@@ -102,5 +103,5 @@
     <% } %>
   </details>
 </main>
-<script src="/js/form.js?v=20261001" defer></script>
+<script src="/js/form.js?v=20261007-3" defer></script>
 <%- include('partials/footer') %>

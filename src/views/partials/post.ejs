@@ -1,12 +1,16 @@
 <%#
   Post estilo Instagram (diseño IMAGO, oct. 2026). Un solo componente para el muro, la vista previa y la pieza de 50 × 70 cm.
   Todas las medidas están en cqw (porcentaje del ancho del post), tomadas del diseño de 466 px: escala igual en pantalla y en papel.
-  post = { titulo, facultad, programa, investigadores: [], imageSrc, imageSrcset?, imageSizes?, imageAlt?, lazy?, href?,
+  post = { titulo, frase?, facultad, programa, investigadores: [], imageSrc, imageSrcset?, imageSizes?, imageAlt?, lazy?, href?,
            qrSvg? (SVG en línea, para imprimir) | qrSrc? (URL de imagen), qrHref?, headingTag?, className?, facultadId?, territorioId? }
+  La franja azul muestra la frase del post (pregunta_gancho); el título va en la ficha. Sin frase (borradores), el título.
 -%>
 <% const names = (post.investigadores || []).map(n => String(n).trim()).filter(Boolean);
    const Heading = post.headingTag || 'h3';
-   const sizeClass = names.length <= 2 ? 'few' : names.length <= 4 ? 'some' : 'many'; %>
+   const sizeClass = names.length <= 2 ? 'few' : names.length <= 4 ? 'some' : 'many';
+   const phrase = String(post.frase || '').trim() || post.titulo;
+   // La franja tiene alto fijo: con más texto baja el tamaño de letra en vez de crecer sobre la imagen.
+   const bandSize = phrase.length <= 30 ? 'xl' : phrase.length <= 50 ? 'l' : phrase.length <= 70 ? 'm' : 's'; %>
 <article class="ig-post <%= post.className || '' %> <%= post.facultadId ? `fac-${post.facultadId}` : '' %> <%= post.territorioId ? `ter-${post.territorioId}` : '' %>">
   <div class="ig-post-frame">
     <header class="ig-post-head">
@@ -16,8 +20,8 @@
     </header>
     <div class="ig-post-media">
       <% if (post.imageSrc) { %><img class="ig-post-image" src="<%= post.imageSrc %>"<% if (post.imageSrcset) { %> srcset="<%= post.imageSrcset %>" sizes="<%= post.imageSizes || '100vw' %>"<% } %> alt="<%= post.imageAlt || '' %>"<% if (post.lazy) { %> loading="lazy"<% } %> decoding="async" width="1600" height="1200"><% } else { %><span class="ig-post-pending">Imagen pendiente</span><% } %>
-      <%# La imagen queda detrás de la franja azul: la franja crece hacia arriba si el título ocupa más líneas. -%>
-      <div class="ig-post-band"><<%= Heading %> class="ig-post-title"><% if (post.href) { %><a href="<%= post.href %>"><%= post.titulo %></a><% } else { %><%= post.titulo %><% } %></<%= Heading %>></div>
+      <%# La imagen queda detrás de la franja azul, que conserva siempre el mismo alto. -%>
+      <div class="ig-post-band"><<%= Heading %> class="ig-post-title is-<%= bandSize %>"><% if (post.href) { %><a href="<%= post.href %>"><%= phrase %></a><% } else { %><%= phrase %><% } %></<%= Heading %>></div>
     </div>
     <div class="ig-post-info">
       <p class="ig-post-researchers is-<%= sizeClass %>"><%= names.length ? names.join(' · ') : 'Investigadores' %></p>

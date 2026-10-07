@@ -59,8 +59,8 @@ router.post('/coordinacion/autores/:id/:accion', requireRole('coordinador', 'adm
 
 router.get('/coordinacion/investigaciones/:id', requireRole('coordinador', 'admin'), async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.sendStatus(404);
-  const research = (await pool.query(`SELECT i.*,p.nombre AS programa_nombre,f.nombre AS facultad_nombre
-    FROM investigaciones i JOIN programas p ON p.id=i.programa_id JOIN facultades f ON f.id=p.facultad_id WHERE i.id=$1`, [req.params.id])).rows[0];
+  const research = (await pool.query(`SELECT i.*,p.nombre AS programa_nombre,f.nombre AS facultad_nombre,t.nombre AS territorio_nombre
+    FROM investigaciones i JOIN programas p ON p.id=i.programa_id JOIN facultades f ON f.id=p.facultad_id LEFT JOIN territorios t ON t.id=i.territorio_id WHERE i.id=$1`, [req.params.id])).rows[0];
   if (!research || !await canCoordinate(pool, req.user, research.programa_id) ||
       (req.user.rol !== 'admin' && ['borrador','archivada'].includes(research.estado_flujo))) return res.sendStatus(404);
   research.investigadores = (await pool.query('SELECT nombre_completo FROM investigadores WHERE investigacion_id=$1 ORDER BY orden,id', [research.id])).rows.map(r => r.nombre_completo).join('\n');
@@ -68,7 +68,7 @@ router.get('/coordinacion/investigaciones/:id', requireRole('coordinador', 'admi
 });
 
 router.get('/admin/investigaciones', requireRole('admin'), async (req, res) => {
-  const research = (await pool.query(`SELECT i.id,i.titulo,i.estado_flujo,i.territorio_id,i.slug,i.observaciones_revision,
+  const research = (await pool.query(`SELECT i.id,i.titulo,i.estado_flujo,i.territorio_id,i.territorio_propuesto,i.slug,i.observaciones_revision,
       i.edicion_autorizada_at,i.cambios_estado,i.cambios_enviados_at,i.cambios_observaciones,
       p.nombre AS programa,p.cupo,u.nombre AS autor,
       (SELECT count(*)::int FROM investigaciones o WHERE o.programa_id=i.programa_id AND o.estado_flujo IN ('seleccionada','publicada')) AS ocupados
@@ -92,8 +92,8 @@ router.get('/admin/investigaciones', requireRole('admin'), async (req, res) => {
 // Revisión de los cambios propuestos para una ficha publicada, tal como se verían al aprobarlos.
 router.get('/admin/investigaciones/:id/cambios', requireRole('admin'), async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.sendStatus(404);
-  const research = (await pool.query(`SELECT i.*,p.nombre AS programa_nombre,f.nombre AS facultad_nombre
-    FROM investigaciones i JOIN programas p ON p.id=i.programa_id JOIN facultades f ON f.id=p.facultad_id WHERE i.id=$1`, [req.params.id])).rows[0];
+  const research = (await pool.query(`SELECT i.*,p.nombre AS programa_nombre,f.nombre AS facultad_nombre,t.nombre AS territorio_nombre
+    FROM investigaciones i JOIN programas p ON p.id=i.programa_id JOIN facultades f ON f.id=p.facultad_id LEFT JOIN territorios t ON t.id=i.territorio_id WHERE i.id=$1`, [req.params.id])).rows[0];
   if (!research?.cambios) return res.status(404).render('not-found', { title: 'Página no encontrada' });
   const current = { ...research, investigadores: (await pool.query('SELECT nombre_completo FROM investigadores WHERE investigacion_id=$1 ORDER BY orden,id', [research.id])).rows.map(r => r.nombre_completo).join('\n') };
   const proposed = { ...research, ...research.cambios, investigadores: (research.cambios.investigadores || []).join('\n'), estado_flujo: 'cambios propuestos' };
@@ -105,6 +105,24 @@ router.get('/admin/investigaciones/:id/cambios', requireRole('admin'), async (re
   res.render('research-preview', { title: 'Revisar cambios', research: proposed, csrf: csrfToken(req), canEdit: false, windowOpen: false, resultado: null,
     backUrl: '/admin/investigaciones', imageSrc: research.cambios_imagen ? `/media/investigaciones/${research.id}/propuesta` : null, changed });
 });
+
+// Territorio propuesto por un autor: si ya existe uno con ese nombre (sin distinguir mayúsculas ni tildes) se reutiliza;
+// si no, se crea al final de la lista con un color de la paleta. IMAGO puede ajustarlo después en Territorios.
+const PALETTE = ['#9B2C8E', '#1E6B2B', '#E8712F', '#5B2A9E', '#1A9FD6'];
+const plain = text => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+async function territoryFromProposal(client, name) {
+  await client.query('LOCK TABLE territorios IN SHARE ROW EXCLUSIVE MODE');
+  const all = (await client.query('SELECT id, nombre, slug, orden FROM territorios')).rows;
+  const same = all.find(t => plain(t.nombre) === plain(name));
+  if (same) return String(same.id);
+  const base = plain(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'territorio';
+  let slug = base;
+  for (let n = 2; all.some(t => t.slug === slug); n++) slug = `${base}-${n}`;
+  const orden = Math.max(0, ...all.map(t => t.orden)) + 1;
+  const created = await client.query('INSERT INTO territorios(nombre, slug, color_hex, orden) VALUES($1,$2,$3,$4) RETURNING id',
+    [name.trim(), slug, PALETTE[all.length % PALETTE.length], orden]);
+  return String(created.rows[0].id);
+}
 
 // Todas las transiciones de selección/publicación bloquean primero el programa.
 // Así el conteo del cupo se mantiene consistente aun con solicitudes simultáneas.
@@ -142,14 +160,17 @@ async function transition(req, res, administrative) {
       // Aprobar = publicar en un solo paso. IMAGO puede aprobar una ficha enviada directamente (sin esperar la
       // selección de coordinación) o una ya seleccionada; el cupo del programa se respeta igual.
       if (!['enviada','seleccionada'].includes(item.estado_flujo)) throw new ReviewError('Solo se pueden aprobar fichas enviadas o seleccionadas.');
-      const territory = z.string().regex(/^\d+$/).safeParse(req.body.territorio_id);
+      // El autor eligió el territorio al registrar la ficha; si propuso uno nuevo («Otro»), se crea al publicar.
+      const territory = req.body.territorio_id === 'nuevo' && item.territorio_propuesto
+        ? { success: true, data: await territoryFromProposal(client, item.territorio_propuesto) }
+        : z.string().regex(/^\d+$/).safeParse(req.body.territorio_id);
       if (!territory.success || !(await client.query('SELECT 1 FROM territorios WHERE id=$1', [territory.data])).rowCount) throw new ReviewError('Selecciona un territorio válido.', 400);
       if (item.estado_flujo === 'enviada') {
         const count = (await client.query(`SELECT count(*)::int AS n FROM investigaciones
           WHERE programa_id=$1 AND estado_flujo IN ('seleccionada','publicada')`, [item.programa_id])).rows[0].n;
         if (count >= program.cupo) throw new ReviewError(`El programa ya tiene ${count} de ${program.cupo} investigaciones aprobadas. El cupo está completo.`);
       }
-      await client.query("UPDATE investigaciones SET estado_flujo='publicada',territorio_id=$1,observaciones_revision=NULL,publicada_at=COALESCE(publicada_at,now()),updated_at=now() WHERE id=$2", [territory.data, item.id]);
+      await client.query("UPDATE investigaciones SET estado_flujo='publicada',territorio_id=$1,territorio_propuesto=NULL,observaciones_revision=NULL,publicada_at=COALESCE(publicada_at,now()),updated_at=now() WHERE id=$2", [territory.data, item.id]);
       result = 'publicada';
     } else if (action === 'autorizar-edicion' || action === 'revocar-edicion') {
       if (item.estado_flujo !== 'publicada') throw new ReviewError('Solo se puede autorizar la edición de fichas publicadas.');
