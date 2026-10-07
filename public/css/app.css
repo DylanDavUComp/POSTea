@@ -435,16 +435,16 @@ body.print-doc { background:#E9E4F0; }
 .ig-post-media { position:relative; flex:1 0 auto; min-height:91cqw; background:white; overflow:hidden; }
 .ig-post-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
 .ig-post-pending { position:absolute; inset:0 0 25cqw; display:grid; place-items:center; color:#9A98AE; font-size:3.4cqw; }
-/* Franja de alto fijo: la frase nunca le quita espacio a la imagen. El tamaño de letra baja según el largo
-   (clase is-xl…is-s, calculada en partials/post.ejs) para que hasta 3 líneas quepan dentro de la franja. */
-.ig-post-band { position:absolute; left:0; right:0; bottom:0; height:25.1cqw; box-sizing:border-box; display:flex; align-items:center;
-  padding:6.6cqw 6cqw 4.4cqw; overflow:hidden; background:linear-gradient(180deg,var(--post-navy) 0%,var(--post-navy-deep) 100%);
+/* Franja ajustada a la frase: solo el margen necesario (arriba, el de la inclinación). El tamaño de letra baja
+   según el largo (clase is-xl…is-s, calculada en partials/post.ejs) para que la franja nunca pase de 3 líneas. */
+.ig-post-band { position:absolute; left:0; right:0; bottom:0; box-sizing:border-box; display:flex; align-items:center;
+  padding:4.9cqw 4.6cqw 1.6cqw; background:linear-gradient(180deg,var(--post-navy) 0%,var(--post-navy-deep) 100%);
   clip-path:polygon(0 0,100% 4.7cqw,100% 100%,0 100%); }
-.ig-post-title { margin:0; font-family:var(--font-post-title); font-weight:700; font-size:5.5cqw; line-height:1.15; color:white; letter-spacing:-.01em;
+.ig-post-band .ig-post-title { margin:0; font-family:var(--font-post-title); font-weight:700; font-size:5.5cqw; line-height:.96; color:white; letter-spacing:-.01em;
   overflow-wrap:anywhere; text-wrap:balance; }
-.ig-post-title.is-l { font-size:4.8cqw; }
-.ig-post-title.is-m { font-size:4.2cqw; line-height:1.12; }
-.ig-post-title.is-s { font-size:3.8cqw; line-height:1.12; }
+.ig-post-band .ig-post-title.is-l { font-size:4.8cqw; }
+.ig-post-band .ig-post-title.is-m { font-size:4.2cqw; }
+.ig-post-band .ig-post-title.is-s { font-size:3.8cqw; }
 .ig-post-title a { color:inherit; text-decoration:none; }
 .ig-post-title a:hover,.ig-post-title a:focus-visible { text-decoration:underline; text-decoration-thickness:.3cqw; }
 /* Investigadores · divisor · QR · llamado a la acción. */
