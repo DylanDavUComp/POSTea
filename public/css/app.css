@@ -109,6 +109,20 @@ h1,h2,h3 { color:var(--purple); line-height:1.15; }
 .editor-grid { display:grid; gap:1rem; }
 .editor-grid > div { display:grid; gap:.5rem; }
 .editor-image { display:block; width:min(100%,350px); border-radius:12px; }
+/* Comprobación de la imagen al elegirla: recorte que tendrá en el póster y nitidez (form.js). */
+.image-check { display:flex; align-items:flex-start; gap:1rem; margin:.2rem 0 .4rem; padding:.8rem 1rem; border-left:4px solid; border-radius:10px; font-size:.9rem; }
+.image-check[hidden] { display:none; }
+.image-check[data-level=ok] { background:#E5F4E7; border-color:#1E6B2B; color:#174D21; }
+.image-check[data-level=warn] { background:#FFF1E7; border-color:var(--orange); color:#452610; }
+.image-check[data-level=low] { background:#FFF1E7; border-color:#B54100; color:#452610; font-weight:700; }
+.image-check[data-level=error] { background:#FDE7EA; border-color:#B00020; color:#5C0010; font-weight:700; }
+.image-check-message { margin:0; }
+/* La franja azul inclinada tapa ~18 % inferior del área de la imagen en la pieza. */
+.image-check-crop { position:relative; flex:0 0 120px; width:120px; overflow:hidden; border-radius:6px; background:#DED4EC; }
+.image-check-crop[hidden] { display:none; }
+.image-check-crop img { display:block; width:100%; height:100%; object-fit:cover; }
+.image-check-crop::after { content:""; position:absolute; inset:auto 0 0; height:18%; background:rgb(45 41 102 / .85); clip-path:polygon(0 0,100% 28%,100% 100%,0 100%); }
+@media (max-width:480px) { .image-check { flex-direction:column; } .image-check-crop { width:100%; max-width:220px; flex-basis:auto; } }
 .editor-actions { padding:.5rem 0 1rem; }
 .preview-warning { background:#FFF1E7; padding:.8rem 1rem; border-radius:10px; color:#452610; }
 .success-note { background:#E5F4E7; border-left:4px solid #1E6B2B; padding:.9rem 1rem; border-radius:10px; color:#174D21; font-weight:700; margin:0 0 1rem; }

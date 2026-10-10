@@ -86,3 +86,48 @@ document.querySelectorAll('select[data-other-target]').forEach(select => {
   select.addEventListener('change', () => { update(); if (!target.hidden) target.querySelector('input')?.focus(); });
   update();
 });
+
+// Nitidez en el póster de 50 × 70 cm: mismos cálculos que el servidor (PRINT_IMAGE en src/research.js).
+// La imagen cubre el área recortando bordes, así que cuenta el lado más justo. Solo avisa: nunca impide subirla.
+document.querySelectorAll('input[type=file][data-print-check]').forEach(input => {
+  const box = document.getElementById(input.dataset.printCheck);
+  if (!box) return;
+  const crop = box.querySelector('img');
+  const message = box.querySelector('.image-check-message');
+  const [areaWidth, areaHeight] = input.dataset.printArea.split('x').map(Number);
+  const minPpi = Number(input.dataset.minPpi), goodPpi = Number(input.dataset.goodPpi);
+  const pixelsAt = ppi => `${Math.ceil(areaWidth / 2.54 * ppi)} × ${Math.ceil(areaHeight / 2.54 * ppi)} px`;
+  box.querySelector('.image-check-crop').style.aspectRatio = `${areaWidth} / ${areaHeight}`;
+  let objectUrl = null;
+  const show = (level, text, withCrop) => {
+    box.hidden = false;
+    box.dataset.level = level;
+    box.setAttribute('role', level === 'error' ? 'alert' : 'status');
+    message.textContent = text;
+    crop.parentElement.hidden = !withCrop;
+  };
+  const reject = text => { input.value = ''; show('error', text, false); };
+  input.addEventListener('change', () => {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = null;
+    const file = input.files && input.files[0];
+    if (!file) { box.hidden = true; return; }
+    if (file.size > Number(input.dataset.maxBytes)) return reject(`La imagen pesa ${(file.size / 1048576).toFixed(1)} MB y el máximo es ${Math.round(input.dataset.maxBytes / 1048576)} MB. Expórtala en JPG de calidad alta.`);
+    objectUrl = URL.createObjectURL(file);
+    const probe = new Image();
+    // Si el navegador no la puede abrir no se bloquea: el servidor la revisa al guardar y explica el problema.
+    probe.onerror = () => { box.hidden = true; };
+    probe.onload = () => {
+      // naturalWidth/Height ya vienen girados según la orientación EXIF, como los mide el servidor.
+      const width = probe.naturalWidth, height = probe.naturalHeight;
+      const ppi = Math.floor(Math.min(width / (areaWidth / 2.54), height / (areaHeight / 2.54)));
+      crop.src = objectUrl;
+      const size = `${width} × ${height} px`;
+      // Solo aviso: la imagen se puede subir igual; quien la elige decide si busca una más grande.
+      if (ppi < minPpi) return show('low', `${size} · ${ppi} ppp en el póster: impresa a 50 × 70 cm se verá borrosa. Puedes subirla, pero si tienes una versión de ${pixelsAt(minPpi)} o más, úsala.`, true);
+      if (ppi < goodPpi) return show('warn', `${size} · ${ppi} ppp en el póster. Se puede usar, pero de cerca se verá algo suave. Si tienes una versión más grande (${pixelsAt(goodPpi)} o más), mejor esa.`, true);
+      show('ok', `${size} · buena nitidez para el póster. Así se recorta en la pieza impresa:`, true);
+    };
+    probe.src = objectUrl;
+  });
+});

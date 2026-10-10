@@ -149,7 +149,7 @@ Quita tu IP de la lista al terminar.
 - Límites de frecuencia en ingreso, registro, inversión, comentarios, reportes y restablecimiento. Se cuentan por cuenta cuando aplica, porque muchas personas comparten la wifi del campus.
 - `helmet`: CSP sin scripts ni estilos en línea, HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy: no-referrer`. Sin `X-Powered-By`.
 - Consultas parametrizadas y validación con `zod`. Plantillas con escape automático; los únicos `<%-` son constantes o el SVG del QR generado por la librería.
-- Imágenes: máximo 5 MB, formato verificado con `sharp`, recodificadas a WebP y privadas hasta su publicación. `sharp` 0.35.5 corrige vulnerabilidades de libvips. `npm audit`: 0 vulnerabilidades.
+- Imágenes: máximo 10 MB y aviso de nitidez en el formulario según los ppp en el área del póster (borrosa bajo 150, ≈ 2953 × 2776 px; suave de 150 a 200; nunca bloquea), guardadas hasta 200 ppp, formato verificado con `sharp`, recodificadas a WebP y privadas hasta su publicación. `sharp` 0.35.5 corrige vulnerabilidades de libvips. `npm audit`: 0 vulnerabilidades.
 - Enlaces de restablecimiento de un solo uso, guardados como hash y válidos por 72 h. Usarlo cierra las sesiones abiertas.
 - CSV exportados con protección contra inyección de fórmulas. Nunca se exportan contraseñas.
 - Redirecciones `?next=` limitadas al propio sitio.

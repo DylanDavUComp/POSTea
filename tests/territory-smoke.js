@@ -31,7 +31,7 @@ async function sendForm(cookie, path, fields, withImage = true) {
     objetivo: text, metodologia: text, resultados: text, estado_investigacion: 'terminada', tipo: 'investigacion', imagen_credito: '',
     investigadores: 'Investigadora DEMO', derechos_imagen_confirmados: 'si', territorio: '', territorio_otro: '', intent: 'enviar', ...fields };
   for (const [key, value] of Object.entries(all)) data.set(key, value);
-  if (withImage) data.set('imagen', new Blob([await sharp({ create: { width: 40, height: 30, channels: 3, background: '#2a1150' } }).png().toBuffer()], { type: 'image/png' }), 'demo.png');
+  if (withImage) data.set('imagen', new Blob([await sharp({ create: { width: 3000, height: 2800, channels: 3, background: '#2a1150' } }).png().toBuffer()], { type: 'image/png' }), 'demo.png');
   const res = await get(path, { method: 'POST', headers: { cookie }, body: data });
   return { status: res.status, location: res.headers.get('location'), html: await res.text() };
 }

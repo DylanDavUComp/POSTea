@@ -15,4 +15,5 @@ ensureAdmin()
     if (skipped) console.warn(`Aviso: ${skipped}`);
   })
   .catch(error => console.error('No se pudo verificar la cuenta de administración:', error.message))
-  .finally(() => app.listen(port, host, () => console.log(`POSTEA disponible en http://${host}:${port}`)));
+  // 0.0.0.0 no se puede abrir en el navegador (ERR_ADDRESS_INVALID): el aviso muestra localhost.
+  .finally(() => app.listen(port, host, () => console.log(`POSTEA disponible en http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`)));

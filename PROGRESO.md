@@ -54,13 +54,13 @@ Hecho:
 
 - Panel privado `/panel` con borradores y estados; crear, editar, eliminar borradores y ver vista previa de post y ficha.
 - Validación al enviar: longitudes, investigadores, tipo y estado, imagen obligatoria y derechos de uso. Los borradores permiten campos incompletos.
-- Imágenes JPG/PNG/WebP recibidas en memoria, límite de 5 MB, redimensionadas a máximo 1600 px y guardadas como WebP en PostgreSQL. Las imágenes no publicadas solo se sirven al autor o admin.
+- Imágenes JPG/PNG/WebP recibidas en memoria, límite de 10 MB (antes 5), aviso (sin bloqueo) bajo 200 ppp en el póster y guardadas hasta 200 ppp (antes, máximo 1600 px) y guardadas como WebP en PostgreSQL. Las imágenes no publicadas solo se sirven al autor o admin.
 - Slug generado al crear, regenerable en borrador, sin cambio después de publicar. La ventana de convocatoria se consulta en `configuracion`.
 - `seed:demo` crea un programa y autor marcados DEMO y abre la convocatoria solo en desarrollo. No se ejecuta en producción ni automáticamente.
 
 Verificado localmente:
 
-- `npm run test:phase3`: login de autor, borrador, rechazo de envío sin imagen, envío completo, imagen WebP de 1600 px, vista previa y eliminación de borrador; también rechazo de imagen mayor a 5 MB y protección de panel e imagen privada.
+- `npm run test:phase3`: login de autor, borrador, rechazo de envío sin imagen, envío completo, imagen WebP reducida a 200 ppp en el póster, imagen de baja resolución aceptada sin agrandar, vista previa y eliminación de borrador; también rechazo de imagen mayor a 10 MB y protección de panel e imagen privada.
 - `npm run test:migrations`: dos migraciones desde base vacía, repetición sin duplicados, tres facultades, cinco territorios y ningún programa ni usuario inventados en la semilla base.
 - Corrección de formulario: faltaba cerrar la etiqueta HTML `<form>`, lo que absorbía el campo CSRF dentro de `action` y dejaba ambos botones sin enviar. Se corrigió el marcado y se añadió una prueba de regresión. Un navegador Edge real completó Guardar borrador y Enviar ficha en el servidor del puerto 3000, con confirmaciones visibles.
 

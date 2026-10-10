@@ -126,9 +126,9 @@ async function main() {
   assert.equal((await pool.query('SELECT imagen_mini IS NULL AS vacia FROM investigaciones WHERE id=$1', [research])).rows[0].vacia, true);
   assert.equal(await revalidate(`/media/investigaciones/${research}/mini`, etag), 200, 'ETag viejo ya no vale');
   await pool.query('UPDATE investigaciones SET imagen=$1 WHERE id=$2', [image, research]);
-  // Tarjetas y ficha piden la mini; la ficha ofrece la original para pantallas grandes.
+  // Tarjetas y ficha piden solo la mini: la original es para el póster impreso (hasta ~4000 px).
   const fiche = await (await get(`/f/demo-operacion-${suffix}`)).text();
-  assert.match(fiche, new RegExp(`srcset="/media/investigaciones/${research}/mini 1080w, /media/investigaciones/${research} 1600w"`));
+  assert.match(fiche, new RegExp(`<img class="public-hero-image" src="/media/investigaciones/${research}/mini" alt=`));
   // Post IMAGO en el muro: componente compartido con imagen tras la franja, investigadores y QR público cacheado.
   const wall = await (await get('/muro')).text();
   assert.match(wall, /class="ig-post public-card/); assert.match(wall, /class="ig-post-band"><h3 class="ig-post-title is-(xl|l|m|s)"><a href="\/f\/demo-operacion-/);

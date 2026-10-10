@@ -93,7 +93,7 @@ async function main() {
     for (const [k, v] of Object.entries({ _csrf: csrfOf(page), titulo: title, subtitulo: '', pregunta_gancho: '¿Pregunta nueva?', descripcion: text('nueva'),
       objetivo: text('o'), metodologia: text('m'), resultados: text('r'), estado_investigacion: 'terminada', tipo: 'investigacion', imagen_credito: '',
       sharepoint_url: '', investigadores: 'Ana Original\nBeto Nuevo', derechos_imagen_confirmados: 'si', intent })) data.append(k, v);
-    if (withImage) data.append('imagen', new Blob([await sharp({ create: { width: 30, height: 30, channels: 3, background: '#ff6b00' } }).png().toBuffer()], { type: 'image/png' }), 'nueva.png');
+    if (withImage) data.append('imagen', new Blob([await sharp({ create: { width: 3000, height: 2800, channels: 3, background: '#ff6b00' } }).png().toBuffer()], { type: 'image/png' }), 'nueva.png');
     const res = await get(`/panel/investigaciones/${pub.id}/editar`, { method: 'POST', headers: { cookie: authorCookie }, body: data });
     await res.text();
     return res;

@@ -177,7 +177,7 @@ Pulsa **Crear ficha** y completa las tres secciones:
 
 **03 · Personas e imagen**
 - **Investigadores:** de 1 a 6 nombres completos, **uno por línea**.
-- **Imagen principal:** JPG, PNG o WebP de **máximo 5 MB**.
+- **Imagen principal:** JPG, PNG o WebP de **máximo 10 MB**. Se imprime en un póster de 50 × 70 cm, así que usa una imagen **casi cuadrada de unos 3000 × 2800 px o más** (una foto de celular de 12 MP sirve). Los bordes pueden recortarse y la franja azul cubre la parte inferior. Al elegirla verás cómo queda recortada y si su nitidez es buena o si se verá suave o borrosa impresa. Es solo un aviso: la imagen se puede subir igual.
 - **Crédito de imagen:** opcional.
 - Casilla **"Tengo derechos de uso de esta imagen"** (obligatoria para enviar).
 

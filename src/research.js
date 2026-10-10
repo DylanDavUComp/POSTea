@@ -11,7 +11,15 @@ const { submissionOpen, loadConfig, parseDate, formatDay } = require('./config')
 const { csrfToken, verifyCsrf, requireRole } = require('./account');
 
 const router = express.Router();
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// 10 MB: una foto de 12 MP en JPG pesa de 3 a 6 MB. El peso no mide la nitidez; eso lo decide PRINT_IMAGE.
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+// Área de la imagen en la pieza de 50 × 70 cm: todo el ancho y lo que dejan el encabezado, los datos y la barra (~23 cm).
+// La imagen se recorta para cubrirla (object-fit: cover), así que la nitidez la fija el lado que queda más justo.
+// Nunca se rechaza por resolución: bajo 150 ppp el formulario avisa que se verá borrosa y de 150 a 200 que se verá algo suave.
+// Se guarda hasta 200 ppp (más no se nota en papel y solo pesa en la base).
+const PRINT_IMAGE = { widthCm: 50, heightCm: 47, minPpi: 150, goodPpi: 200, maxBytes: MAX_IMAGE_BYTES };
+const printPpi = (width, height) => Math.floor(Math.min(width / (PRINT_IMAGE.widthCm / 2.54), height / (PRINT_IMAGE.heightCm / 2.54)));
+const pixelsAt = ppi => [Math.ceil(PRINT_IMAGE.widthCm / 2.54 * ppi), Math.ceil(PRINT_IMAGE.heightCm / 2.54 * ppi)];
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -139,14 +147,22 @@ async function loadResearch(id) {
 
 async function imageFromUpload(file) {
   if (!file) return null;
+  const unreadable = () => new FormError('La imagen no se pudo leer. Usa JPG, PNG o WebP de hasta 10 MB y 40 megapíxeles.');
+  const source = sharp(file.buffer, { limitInputPixels: 40_000_000 });
+  const metadata = await source.metadata().catch(() => null);
+  if (!metadata || !['jpeg', 'png', 'webp'].includes(metadata.format)) throw unreadable();
+  // Las fotos de celular suelen venir giradas por EXIF: se mide como se verá.
+  const turned = (metadata.orientation || 1) >= 5;
+  const width = turned ? metadata.height : metadata.width, height = turned ? metadata.width : metadata.height;
+  // La resolución no bloquea la subida: el formulario avisa al elegirla y aquí solo se evita guardar más de lo que se imprime.
+  // Se reduce solo lo que pase de 200 ppp en el lado más justo; el otro lado queda más largo para que el recorte no pierda nitidez.
+  const [goodWidth, goodHeight] = pixelsAt(PRINT_IMAGE.goodPpi);
+  const scale = Math.min(1, Math.max(goodWidth / width, goodHeight / height));
   try {
-    const source = sharp(file.buffer, { limitInputPixels: 40_000_000 });
-    const metadata = await source.metadata();
-    if (!['jpeg', 'png', 'webp'].includes(metadata.format)) throw new Error('Formato no admitido');
-    const image = await source.rotate().resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 80 }).toBuffer();
-    return image;
-  } catch { throw new FormError('La imagen no se pudo leer. Usa JPG, PNG o WebP de hasta 5 MB.'); }
+    // effort 2: con 0,1 CPU en Render, una imagen de 4000 px tarda la mitad que con el valor por defecto y pesa casi igual.
+    return await source.rotate().resize({ width: Math.round(width * scale), withoutEnlargement: true })
+      .webp({ quality: 80, effort: 2 }).toBuffer();
+  } catch { throw unreadable(); }
 }
 
 // En una propuesta de cambios de una ficha publicada el territorio no se edita: lo asignó IMAGO al publicar.
@@ -200,7 +216,7 @@ async function renderForm(req, res, { research = null, values = {}, error = null
   if (research && !('territorio' in values)) values = { ...values, ...territoryValues(research) };
   res.status(status).render('research-form', {
     title: research ? 'Editar investigación' : 'Nueva investigación', research, values, territories,
-    csrf: csrfToken(req), error, windowOpen, editingPublished,
+    csrf: csrfToken(req), error, windowOpen, editingPublished, printImage: { ...PRINT_IMAGE, minPixels: pixelsAt(PRINT_IMAGE.minPpi) },
     imageSrc: research ? `/media/investigaciones/${research.id}${editingPublished && research.cambios_imagen ? '/propuesta' : ''}` : null
   });
 }
@@ -208,7 +224,7 @@ async function renderForm(req, res, { research = null, values = {}, error = null
 function uploadAndCsrf(req, res, next) {
   upload(req, res, error => {
     if (error) {
-      const message = error.code === 'LIMIT_FILE_SIZE' ? 'La imagen debe pesar máximo 5 MB.' :
+      const message = error.code === 'LIMIT_FILE_SIZE' ? 'La imagen debe pesar máximo 10 MB.' :
         error instanceof FormError ? error.message : 'Revisa el archivo y vuelve a intentarlo.';
       return res.status(400).render('error', { title: 'No se pudo subir la imagen', message });
     }
@@ -217,7 +233,7 @@ function uploadAndCsrf(req, res, next) {
 }
 
 // Variante para tarjetas y celulares: 1080 px cubren la ficha en un celular de pantalla 3x (unos 360 px de ancho útil)
-// y las tarjetas del muro; la de 1600 px queda para pantallas grandes y la pieza impresa.
+// y las tarjetas del muro. La original (hasta ~4000 px, 200 ppp en el póster) queda para la pieza impresa y la vista previa.
 const MINI_SIZE = 1080;
 const miniFrom = image => sharp(image).resize(MINI_SIZE, MINI_SIZE, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
 

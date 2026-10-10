@@ -26,7 +26,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(helmet({ contentSecurityPolicy: {
   directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(),
     'style-src': ["'self'", 'https://fonts.googleapis.com'],
-    'font-src': ["'self'", 'https://fonts.gstatic.com'] }
+    'font-src': ["'self'", 'https://fonts.gstatic.com'],
+    // blob: para medir y mostrar el recorte de la imagen elegida en el formulario antes de subirla (form.js).
+    'img-src': ["'self'", 'data:', 'blob:'] }
 } }));
 // gzip para HTML, CSS, JS y SVG (5 GB/mes de salida en el plan gratuito). Las imágenes WebP ya vienen comprimidas.
 // Las exportaciones se excluyen: van por partes con control de contrapresión propio y las descarga solo el admin.

@@ -69,6 +69,7 @@ async function main() {
   assert.equal(home.headers.get('x-powered-by'), null);
   assert.match(home.headers.get('content-security-policy'), /default-src 'self'/);
   assert.match(home.headers.get('content-security-policy'), /script-src 'self'/);
+  assert.match(home.headers.get('content-security-policy'), /img-src 'self' data: blob:/, 'la vista previa de la imagen elegida usa blob:');
   assert.equal(home.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(home.headers.get('referrer-policy'), 'no-referrer');
 

@@ -72,12 +72,14 @@ async function main() {
   const createHtml = await createPage.text();
   assert.match(createHtml, /<form class="editor-form"[^>]*novalidate/, 'el navegador no debe bloquear el envío sin mostrar el error del servidor');
   assert.match(createHtml, /action="\/panel\/investigaciones\/nueva">\s*<input type="hidden" name="_csrf"/, 'la etiqueta form debe cerrar antes del campo CSRF');
+  assert.match(createHtml, /casi cuadrada<\/strong> de unos <strong>2953 × 2776 px o más/, 'el formulario explica la resolución para el póster');
+  assert.match(createHtml, /data-print-area="50x47" data-min-ppi="150" data-good-ppi="200"/, 'el navegador comprueba la nitidez con los mismos umbrales');
   const createToken = createHtml.match(/name="_csrf" value="([a-f0-9]+)"/)?.[1];
   assert.ok(createToken);
   const tooLarge = form(createToken, 'borrador', 'DEMO Imagen demasiado grande');
-  tooLarge.set('imagen', new Blob([Buffer.alloc(5 * 1024 * 1024 + 1)], { type: 'image/png' }), 'grande.png');
+  tooLarge.set('imagen', new Blob([Buffer.alloc(10 * 1024 * 1024 + 1)], { type: 'image/png' }), 'grande.png');
   const rejectedImage = await request('/panel/investigaciones/nueva', { method: 'POST', body: tooLarge });
-  assert.equal(rejectedImage.status, 400, 'la imagen mayor a 5 MB debe rechazarse');
+  assert.equal(rejectedImage.status, 400, 'la imagen mayor a 10 MB debe rechazarse');
   const title = `DEMO Prueba fase 3 ${Date.now()}`;
   const draft = await request('/panel/investigaciones/nueva', { method: 'POST', body: form(createToken, 'borrador', title) });
   assert.equal(draft.status, 302, 'debe guardar borrador');
@@ -108,8 +110,15 @@ async function main() {
     body: form(editToken, 'enviar', title, true) });
   assert.equal(invalidSend.status, 400, 'no puede enviarse sin imagen');
   assert.match(await invalidSend.text(), /Agrega una imagen/);
+  // Una imagen Full HD (58 ppp en el póster) se acepta: el formulario solo avisa que se verá borrosa.
+  const lowRes = form(editToken, 'borrador', title, true);
+  lowRes.set('imagen', new Blob([await sharp({ create: { width: 1920, height: 1080, channels: 3, background: '#FF6B00' } }).png().toBuffer()], { type: 'image/png' }), 'pequena.png');
+  const lowResSaved = await request(`/panel/investigaciones/${id}/editar`, { method: 'POST', body: lowRes });
+  assert.equal(lowResSaved.status, 302, 'la resolución baja no impide guardar la imagen');
+  const lowResMeta = await sharp(Buffer.from(await (await request(`/media/investigaciones/${id}`)).arrayBuffer())).metadata();
+  assert.equal(lowResMeta.width, 1920, 'sin agrandar la imagen pequeña');
 
-  const image = await sharp({ create: { width: 2200, height: 1100, channels: 3, background: '#FF6B00' } }).png().toBuffer();
+  const image = await sharp({ create: { width: 5000, height: 4000, channels: 3, background: '#FF6B00' } }).png().toBuffer();
   const complete = form(editToken, 'enviar', title, true);
   complete.set('imagen', new Blob([image], { type: 'image/png' }), 'demo.png');
   const sent = await request(`/panel/investigaciones/${id}/editar`, { method: 'POST', body: complete });
@@ -125,7 +134,9 @@ async function main() {
   assert.equal(anonymousMedia.status, 404, 'la imagen de una ficha no publicada debe ser privada');
   const metadata = await sharp(Buffer.from(await media.arrayBuffer())).metadata();
   assert.equal(metadata.format, 'webp');
-  assert.equal(metadata.width, 1600);
+  // Se reduce hasta 200 ppp en el lado más justo (alto: 47 cm → 3701 px) y conserva la proporción.
+  assert.equal(metadata.height, 3701);
+  assert.equal(metadata.width, 4626);
   const preview = await request(sent.headers.get('location'));
   assert.equal(preview.status, 200);
   const previewHtml = await preview.text();

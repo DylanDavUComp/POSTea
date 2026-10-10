@@ -131,8 +131,8 @@ El servicio Free **se duerme tras 15 min sin tráfico entrante** y tarda cerca d
 
 | Dato | Tamaño |
 |---|---|
-| Ficha con imagen | ~0,36 MB (imagen WebP de 1600 px) + ~0,09 MB de su variante de 1080 px |
-| Propuesta de cambios con imagen | +0,36 MB mientras está pendiente; se borra al aprobar o devolver |
+| Ficha con imagen | ~1–2 MB (WebP de hasta ~4000 px, 200 ppp en el póster; desde el 09/10) + ~0,09 MB de su variante de 1080 px. Las subidas anteriores pesan ~0,36 MB (1600 px). Con 150 fichas: ~150–300 MB |
+| Propuesta de cambios con imagen | +1–2 MB mientras está pendiente; se borra al aprobar o devolver |
 | Visita | ~180 B por fila (120.000 visitas ≈ 21 MB) |
 
 Con 150 fichas (38 con propuesta) y 30.000 visitas, la base midió 82 MB. El 70 % (717 MB) solo se alcanzaría con unas 1.600 fichas, unas 900 si todas tuvieran una propuesta con imagen pendiente, o con millones de visitas.
@@ -246,7 +246,7 @@ Medido con imágenes sintéticas pesimistas (WebP de 1600 px ≈ 352 KB; una fot
 | Imagen original 1600 px | — | 352 KB |
 | **Variante 1080 px** (tarjetas y ficha en celular) | — | **91 KB** |
 
-- **Variante de 1080 px:** las tarjetas (inicio, muro y "Conecta") usan siempre esta variante. La ficha la ofrece con `srcset`: un celular 3x de 390 px pide unos 1.074 px y recibe la de 1080; una pantalla grande recibe la de 1600.
+- **Variante de 1080 px:** las tarjetas (inicio, muro y "Conecta") usan siempre esta variante. Desde el 09/10 la ficha también usa solo esta variante: la original es la del póster (hasta ~4000 px y 1–2 MB) y solo la piden la vista previa y la pieza impresa.
 - **Caché de imágenes:** `Cache-Control: public, max-age=300` y `ETag` calculado en la base. Una revalidación responde **304** sin leer la imagen.
 
 **Por visita:**

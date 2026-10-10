@@ -63,8 +63,13 @@
       <p class="field-help" id="investigadores-help">Escribe entre 1 y 6 nombres completos, uno por línea.</p>
       <label for="imagen">Imagen principal <span class="required">*</span></label>
       <% if (research && research.imagen) { %><img class="editor-image" src="<%= imageSrc %>" alt="Imagen actual de la investigación"><p class="field-help">Si eliges otra imagen, reemplazará la actual.</p><% } %>
-      <input id="imagen" type="file" name="imagen" accept="image/jpeg,image/png,image/webp" aria-describedby="imagen-help">
-      <p class="field-help" id="imagen-help">JPG, PNG o WebP · máximo 5 MB. Se convierte a WebP antes de guardar.</p>
+      <p class="field-help" id="imagen-help">Se imprime en un póster de 50 × 70 cm. Usa una imagen <strong>casi cuadrada</strong> de unos <strong><%= printImage.minPixels[0] %> × <%= printImage.minPixels[1] %> px o más</strong>; los bordes pueden recortarse y la franja azul cubre la parte inferior. JPG, PNG o WebP · máximo 10 MB.</p>
+      <input id="imagen" type="file" name="imagen" accept="image/jpeg,image/png,image/webp" aria-describedby="imagen-help imagen-check"
+        data-print-check="imagen-check" data-print-area="<%= printImage.widthCm %>x<%= printImage.heightCm %>" data-min-ppi="<%= printImage.minPpi %>" data-good-ppi="<%= printImage.goodPpi %>" data-max-bytes="<%= printImage.maxBytes %>">
+      <div class="image-check" id="imagen-check" aria-live="polite" hidden>
+        <span class="image-check-crop" aria-hidden="true"><img alt=""></span>
+        <p class="image-check-message"></p>
+      </div>
       <label for="imagen_credito">Crédito de imagen <span class="optional">(opcional)</span></label>
       <input id="imagen_credito" name="imagen_credito" maxlength="180" value="<%= values.imagen_credito || '' %>">
       <label class="check-row" for="derechos_imagen_confirmados"><input id="derechos_imagen_confirmados" type="checkbox" name="derechos_imagen_confirmados" value="si" <%= values.derechos_imagen_confirmados ? 'checked' : '' %>><span>Tengo derechos de uso de esta imagen.</span></label>
@@ -82,6 +87,6 @@
       <% } %>
     </div>
   </form>
-  <script src="/js/form.js?v=20261007-3" defer></script>
+  <script src="/js/form.js?v=20261009-3" defer></script>
 </main>
 <%- include('partials/footer') %>
