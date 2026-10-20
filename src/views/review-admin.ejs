@@ -78,6 +78,7 @@
         <p class="eyebrow">Publicada · <%= item.slug %></p><h3><%= item.titulo %></h3><p><%= item.programa %> · <%= item.autor %></p>
         <div class="review-actions">
           <a class="button secondary-button" href="/f/<%= item.slug %>">Ver ficha pública</a>
+          <a class="button secondary-button" href="/panel/investigaciones/<%= item.id %>/editar">Editar ficha publicada</a>
           <% if (!item.edicion_autorizada_at) { %>
             <form method="post" action="/admin/investigaciones/<%= item.id %>/autorizar-edicion" data-confirm="¿Autorizar a <%= item.autor %> para editar esta ficha? La versión pública no cambiará hasta que apruebes sus cambios.">
               <%- csrfField %><button class="button" type="submit">Autorizar edición al autor</button></form>
