@@ -3,9 +3,9 @@
   <div class="page-heading"><div><p class="eyebrow">Observatorio IMAGO</p><h1>Impresión</h1><p>Piezas de medio pliego y códigos QR de las investigaciones seleccionadas y publicadas.</p></div></div>
   <%- include('partials/admin-nav',{current:'/admin/impresion'}) %>
   <section class="card <%= globalReason ? 'qr-warning' : 'qr-url is-confirmed' %>" aria-labelledby="estado-url">
-    <h2 id="estado-url"><%= globalReason ? 'QR PROVISIONAL – NO IMPRIMIR' : 'URL confirmada para impresión' %></h2>
+    <h2 id="estado-url"><%= globalReason ? 'Revisión de URL para impresión' : 'URL confirmada para impresión' %></h2>
     <p>Los QR apuntan a <code><%= baseUrl || '(BASE_URL vacía)' %>/f/…?src=qr</code><%= globalReason ? `, pero ${globalReason}.` : '.' %></p>
-    <% if (globalReason) { %><p>Todas las piezas y QR descargados llevan la marca de provisional. Revisa <a href="/admin/configuracion#url-qr">Configuración → URL de los QR</a>.</p>
+    <% if (globalReason) { %><p>Las fichas publicadas con QR verificado se imprimen sin marca. Las demás conservan la marca de provisional mientras exista este aviso. Revisa <a href="/admin/configuracion#url-qr">Configuración → URL de los QR</a>.</p>
     <% } else { %><p>Después de imprimir, esta URL y los slugs no deben cambiar. Las fichas que aún no están publicadas siguen marcadas como provisionales.</p><% } %>
   </section>
   <div class="card-actions section-gap">

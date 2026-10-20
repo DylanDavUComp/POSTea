@@ -19,12 +19,14 @@
       <h1><%= pieces.length === 1 ? 'Pieza imprimible' : `Lote de ${pieces.length} piezas` %></h1>
       <p class="preview-warning">Imagen de referencia. Diseño sujeto a ajustes. Haz una prueba de impresión antes de producir todas las piezas.</p>
       <p class="muted">Medio pliego vertical (50 × 70 cm). En el diálogo de impresión elige <strong>Guardar como PDF</strong>, márgenes <strong>Ninguno</strong>, escala <strong>100 %</strong> y activa <strong>Gráficos de fondo</strong>.</p>
+      <% if (testPrint) { %><p class="status-note" role="status"><strong>PDF local de prueba sin marca.</strong> El QR apunta a este equipo; para los pósteres finales configura y confirma la URL pública.</p><% } %>
       <% const blocked = pieces.filter(p => p.provisional); if (blocked.length) { %>
         <p class="form-alert" role="alert"><strong>QR PROVISIONAL – NO IMPRIMIR.</strong> <%= blocked.length === pieces.length ? 'Estas piezas' : `${blocked.length} de ${pieces.length} piezas` %> no están listas: <%= [...new Set(blocked.map(p => p.provisional))].join('; ') %>.</p>
       <% } %>
     </div>
     <div class="print-actions">
       <button class="button" type="button" data-print>Imprimir / Guardar como PDF</button>
+      <% if (testPrintUrl) { %><a class="button secondary-button" href="<%= testPrintUrl %>">PDF de prueba sin marca</a><% } %>
       <% if (pieces.length === 1) { const p = pieces[0]; %>
         <a class="button secondary-button" href="<%= p.url %>" target="_blank" rel="noopener">Probar QR</a>
         <a class="text-link-dark" href="/investigaciones/<%= p.id %>/qr.png?descargar=1">QR en PNG</a>

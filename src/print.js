@@ -3,7 +3,7 @@ const QRCode = require('qrcode');
 const sharp = require('sharp');
 const { pool } = require('./db');
 const { requireAuth, requireRole, csrfToken } = require('./account');
-const { loadConfig, publicBaseUrl, qrUrlProblem } = require('./config');
+const { loadConfig, publicBaseUrl, qrUrlProblem, baseUrlProblem } = require('./config');
 const { toCsv } = require('./csv');
 const { ZipWriter } = require('./zip');
 const { exclusive } = require('./exports');
@@ -16,9 +16,10 @@ const baseUrl = publicBaseUrl;
 const qrUrl = slug => `${baseUrl()}/f/${encodeURIComponent(slug)}?src=qr`;
 const id = value => /^\d{1,18}$/.test(String(value)) ? String(value) : null;
 
-// Provisional si BASE_URL es local, vacía o sin https, si la URL no está confirmada (o cambió después de confirmarla)
-// o si la ficha aún no está publicada (su slug puede cambiar).
+// La verificación de una ficha publicada habilita su impresión sin marca.
+// Las demás fichas mantienen las comprobaciones de URL y publicación existentes.
 function provisionalReason(config, research) {
+  if (research.estado_flujo === 'publicada' && research.qr_verificado_at) return null;
   return qrUrlProblem(config) || (research.estado_flujo !== 'publicada' ? 'la ficha aún no está publicada' : null);
 }
 
@@ -145,9 +146,21 @@ async function piece(item, config) {
 // Pieza de medio pliego. El admin la ve en /admin/impresion/:id; el autor y la coordinación, desde su vista previa.
 async function renderPieces(req, res, items, back) {
   const config = await loadConfig();
+  // Prueba de diseño local: solo el admin puede ocultar la marca en el póster, sin confirmar la URL ni cambiar los QR descargados.
+  const canTestPrint = process.env.NODE_ENV !== 'production' && req.user?.rol === 'admin' &&
+    baseUrlProblem() === 'BASE_URL apunta a localhost';
+  const testPrint = canTestPrint && req.query.prueba === '1';
+  let testPrintUrl = null;
+  if (canTestPrint && !testPrint) {
+    const target = new URL(req.originalUrl, 'http://localhost');
+    target.searchParams.set('prueba', '1');
+    testPrintUrl = target.pathname + target.search;
+  }
   const pieces = await Promise.all(items.map(item => piece(item, config)));
+  if (testPrint) for (const item of pieces) item.provisional = null;
   res.set('Cache-Control', 'no-store');
-  res.render('print-piece', { title: pieces.length === 1 ? `Pieza · ${pieces[0].titulo}` : `Lote de ${pieces.length} piezas`, pieces, back });
+  res.render('print-piece', { title: pieces.length === 1 ? `Pieza · ${pieces[0].titulo}` : `Lote de ${pieces.length} piezas`,
+    pieces, back, testPrint, testPrintUrl });
 }
 
 router.get('/investigaciones/:id/pieza', requireAuth, async (req, res) => {
@@ -179,12 +192,12 @@ router.get('/admin/impresion/lote', requireRole('admin'), async (req, res) => {
 
 router.get('/admin/impresion/qr.zip', requireRole('admin'), async (req, res) => {
   const config = await loadConfig();
-  const rows = (await pool.query(`SELECT i.id,i.slug,i.titulo,i.estado_flujo,p.nombre AS programa,t.nombre AS territorio
+  const rows = (await pool.query(`SELECT i.id,i.slug,i.titulo,i.estado_flujo,i.qr_verificado_at,p.nombre AS programa,t.nombre AS territorio
     FROM investigaciones i JOIN programas p ON p.id=i.programa_id LEFT JOIN territorios t ON t.id=i.territorio_id
     WHERE i.estado_flujo='publicada' ORDER BY p.nombre,i.titulo`)).rows;
   // Fecha de Bogotá en el nombre (en Render el servidor está en UTC: después de las 7 p. m. saldría el día siguiente).
   const stamp = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  res.set('Cache-Control', 'no-store').attachment(`postea-qr-${stamp}${provisionalReason(config, { estado_flujo: 'publicada' }) ? '-PROVISIONAL' : ''}.zip`)
+  res.set('Cache-Control', 'no-store').attachment(`postea-qr-${stamp}${rows.some(row => provisionalReason(config, row)) ? '-PROVISIONAL' : ''}.zip`)
     .type('application/zip');
   // Por partes: cada QR se genera y se envía antes de pasar al siguiente.
   await exclusive(res, async () => {

@@ -162,6 +162,21 @@ async function main() {
   assert.equal(res.headers.get('location'), '/coordinacion?resultado=qr-verificado');
   assert.ok((await pool.query('SELECT qr_verificado_at FROM investigaciones WHERE id=$1', [a.id])).rows[0].qr_verificado_at);
   assert.match(await (await get('/coordinacion?resultado=qr-verificado', { headers: { cookie: coord } })).text(), /QR marcado como verificado/);
+  // Una verificación individual habilita impresión y descargas sin confirmar la URL global.
+  await setUrlConfirmed(false);
+  pieceHtml = await (await get(`/admin/impresion/${a.id}`, { headers: { cookie: admin } })).text();
+  assert.doesNotMatch(pieceHtml, /class="sheet-watermark"|ig-post-qr is-provisional/);
+  assert.ok(pieceHtml.includes(`href="${expected}"`), 'verificar no cambia la URL del QR');
+  const verifiedPng = await bytes(await get(`/investigaciones/${a.id}/qr.png`, { headers: { cookie: admin } }));
+  assert.equal((await sharp(verifiedPng).metadata()).height, 1200);
+  assert.equal(await decode(verifiedPng), expected, 'la descarga conserva el destino del QR verificado');
+  assert.doesNotMatch(await (await get(`/investigaciones/${a.id}/qr.svg`, { headers: { cookie: admin } })).text(), /PROVISIONAL/);
+  assert.match(await (await get(`/admin/impresion/${b.id}`, { headers: { cookie: admin } })).text(), /class="sheet-watermark"/);
+  const mixedBatch = await (await get(`/admin/impresion/lote?id=${a.id}&id=${b.id}`, { headers: { cookie: admin } })).text();
+  assert.equal((mixedBatch.match(/class="sheet-watermark"/g) || []).length, 1, 'el lote respeta la verificación de cada ficha');
+  const mixedZip = await bytes(await get('/admin/impresion/qr.zip', { headers: { cookie: admin } }));
+  assert.ok(mixedZip.includes(Buffer.from(`png/postea-qr-${a.slug}.png`)));
+  assert.ok(mixedZip.includes(Buffer.from(`png/postea-qr-${b.slug}-PROVISIONAL.png`)));
   res = await get(`/coordinacion/investigaciones/${c.id}/verificar-qr`, { method: 'POST', headers: { cookie: coord }, body: new URLSearchParams({ _csrf: token }) });
   assert.equal(res.status, 409, 'solo publicadas');
   const otherToken = csrfOf(await (await get('/coordinacion', { headers: { cookie: otherCoord } })).text());
@@ -169,6 +184,7 @@ async function main() {
   assert.equal(res.status, 404, 'otro programa no');
   await get(`/coordinacion/investigaciones/${a.id}/verificar-qr`, { method: 'POST', headers: { cookie: coord }, body: new URLSearchParams({ _csrf: token, accion: 'desmarcar' }) });
   assert.equal((await pool.query('SELECT qr_verificado_at FROM investigaciones WHERE id=$1', [a.id])).rows[0].qr_verificado_at, null);
+  assert.match(await (await get(`/admin/impresion/${a.id}`, { headers: { cookie: admin } })).text(), /class="sheet-watermark"/, 'retirar la verificación restaura la marca si la URL no está confirmada');
   console.log('Fase 8 OK: QR PNG 1200 px y SVG decodificables, URL al vuelo, marca provisional, lectura simulada a 1 m, slugs cortos, pieza 50×70, permisos, lote, ZIP y verificación de QR.');
 }
 
